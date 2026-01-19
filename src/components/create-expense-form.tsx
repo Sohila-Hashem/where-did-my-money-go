@@ -1,4 +1,3 @@
-import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -31,14 +30,16 @@ import {
 	SelectValue,
 } from "./ui/select";
 import { v7 as uuidv7 } from "uuid";
+import Calendar22 from "./calendar-22";
+import { formatDate } from "@/lib/utils";
 
 const formSchema = z.strictObject({
 	description: z
 		.string()
 		.min(1, "Description must be at least 1 character.")
 		.max(100, "Description must be at most 100 characters."),
-	amount: z.coerce.number().min(0.1, "Amount must be at least 0.1."),
-	date: z.iso.date("Date is required."),
+	amount: z.coerce.number<number>().min(0.1, "Amount must be at least 0.1."),
+	date: z.date("Transaction Date is required."),
 	category: z.enum(ExpenseCategoryEnum, "Category is required."),
 });
 
@@ -49,36 +50,13 @@ interface CreateExpenseFormProps {
 export function CreateExpenseForm({ onNewExpense }: CreateExpenseFormProps) {
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
-		defaultValues: {
-			date: new Date().toLocaleDateString("en-CA"), // Set default date to today in YYYY-MM-DD format
-			category: ExpenseCategoryEnum.Other,
-			description: "",
-			amount: 0,
-		},
 	});
 
 	function onSubmit(data: z.infer<typeof formSchema>) {
-		toast("You submitted the following values:", {
-			id: "form-submission",
-			description: (
-				<pre className="bg-code text-primary mt-2 overflow-x-auto rounded-md p-4">
-					<code className="block whitespace-pre-wrap">
-						{JSON.stringify(data, null, 2)}
-					</code>
-				</pre>
-			),
-			position: "bottom-right",
-			duration: 3000,
-			classNames: {
-				content: "flex flex-col gap-2",
-			},
-			style: {
-				"--border-radius": "calc(var(--radius)  + 4px)",
-			} as React.CSSProperties,
-		});
+		toast.success("Expense Added Successfully!", { id: "expense-added", duration: 2000 });
 		const id = uuidv7();
-		onNewExpense({ ...data, id });
-		form.reset();
+		onNewExpense({ ...data, id, date: formatDate(data.date) });
+		form.reset({});
 	}
 
 	return (
@@ -108,7 +86,7 @@ export function CreateExpenseForm({ onNewExpense }: CreateExpenseFormProps) {
 										/>
 										<InputGroupAddon align="block-end">
 											<InputGroupText className="tabular-nums text-xs text-muted-foreground ms-auto">
-												{field.value.length}/100
+												{field?.value?.length ?? 0}/100
 											</InputGroupText>
 										</InputGroupAddon>
 									</InputGroup>
@@ -145,16 +123,11 @@ export function CreateExpenseForm({ onNewExpense }: CreateExpenseFormProps) {
 							control={form.control}
 							render={({ field, fieldState }) => (
 								<Field data-invalid={fieldState.invalid}>
-									<FieldLabel htmlFor="form-rhf-demo-date">Date</FieldLabel>
-									<InputGroup>
-										<InputGroupInput
-											{...field}
-											type="date"
-											id="form-rhf-demo-date"
-											className="min-h-24 resize-none"
-											aria-invalid={fieldState.invalid}
-										/>
-									</InputGroup>
+									<FieldLabel htmlFor="form-rhf-demo-date">Transaction Date</FieldLabel>
+									<Calendar22
+										value={field.value ? new Date(field.value) : undefined}
+										onChange={field.onChange}
+									/>
 									{fieldState.invalid && (
 										<FieldError errors={[fieldState.error]} />
 									)}
@@ -169,7 +142,7 @@ export function CreateExpenseForm({ onNewExpense }: CreateExpenseFormProps) {
 									<FieldLabel htmlFor="form-rhf-demo-category">
 										Category
 									</FieldLabel>
-									<Select {...field} onValueChange={field.onChange}>
+									<Select {...field} value={field.value} onValueChange={field.onChange}>
 										<SelectTrigger className="w-full">
 											<SelectValue placeholder="Select a category" />
 										</SelectTrigger>

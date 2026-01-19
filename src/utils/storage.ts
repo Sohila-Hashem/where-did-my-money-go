@@ -1,4 +1,4 @@
-import type { Expense } from "@/domain/expense";
+import type { Expense, SupportedCurrencies } from "@/domain/expense";
 
 const EXPENSES_KEY = 'expenses';
 
@@ -16,4 +16,12 @@ export const deleteExpense = (id: string) => {
     const expenses = loadExpenses();
     const updatedExpenses = expenses.filter((expense: Expense) => expense.id !== id);
     localStorage.setItem(EXPENSES_KEY, JSON.stringify(updatedExpenses));
+}
+
+export const loadPreferredCurrency = (): SupportedCurrencies | null => {
+    return localStorage.getItem('preferredCurrency') as SupportedCurrencies | null;
+}
+
+export const savePreferredCurrency = (currency: SupportedCurrencies) => {
+    localStorage.setItem('preferredCurrency', currency);
 }
