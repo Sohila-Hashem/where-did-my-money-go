@@ -1,12 +1,5 @@
-export type ExpenseCategory = 'Food' | 'Transport' | 'Utilities' | 'Entertainment' | 'Health' | 'Other';
-
-export interface Expense {
-    id: string;
-    amount: number;
-    date: string;
-    category: ExpenseCategory;
-    description: string;
-}
+export type ExpenseCategories = keyof typeof ExpenseCategoryEnum;
+export type SupportedCurrencies = keyof typeof ExpenseCurrencyEnum;
 
 export enum ExpenseCategoryEnum {
     Food = 'Food',
@@ -14,5 +7,41 @@ export enum ExpenseCategoryEnum {
     Utilities = 'Utilities',
     Entertainment = 'Entertainment',
     Health = 'Health',
+    Wearables = 'Wearables',
+    Travel = 'Travel',
+    Subscriptions = 'Subscriptions',
+    SelfCare = 'Self Care',
+    Gifts = 'Gifts',
+    Medical = 'Medical',
+    Education = 'Education',
+    Installments = 'Installments',
+    DebtPayment = 'Debt Payment',
+    Withdrawals = 'Withdrawals',
+    Bills = 'Bills',
+    Donations = 'Donations',
+    BankFees = 'Bank Fees',
+    Fees = 'Fees',
+    Investments = 'Investments',
+    Savings = 'Savings',
+    Loans = 'Loans',
+    Taxes = 'Taxes',
+    Insurance = 'Insurance',
+    Transfers = 'Transfers',
     Other = 'Other',
+}
+export enum ExpenseCurrencyEnum {
+    EGP = 'EGP',
+    USD = 'USD',
+    EUR = 'EUR',
+    GBP = 'GBP',
+    JPY = 'JPY',
+    CNY = 'CNY',
+    INR = 'INR',
+}
+export interface Expense {
+    id: string;
+    amount: number;
+    date: string;
+    category: ExpenseCategories;
+    description: string;
 }

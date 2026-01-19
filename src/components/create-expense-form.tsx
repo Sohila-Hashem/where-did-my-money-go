@@ -1,4 +1,3 @@
-import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -20,7 +19,7 @@ import {
 	InputGroupInput,
 	InputGroupText,
 } from "@/components/ui/input-group";
-import { ExpenseCategoryEnum, type Expense } from "@/domain/expense";
+import { ExpenseCategoryEnum, ExpenseCurrencyEnum, type Expense } from "@/domain/expense";
 import {
 	Select,
 	SelectContent,
@@ -40,6 +39,7 @@ const formSchema = z.strictObject({
 	amount: z.coerce.number().min(0.1, "Amount must be at least 0.1."),
 	date: z.iso.date("Date is required."),
 	category: z.enum(ExpenseCategoryEnum, "Category is required."),
+	currency: z.enum(ExpenseCurrencyEnum, "Currency is required."),
 });
 
 interface CreateExpenseFormProps {
@@ -54,28 +54,12 @@ export function CreateExpenseForm({ onNewExpense }: CreateExpenseFormProps) {
 			category: ExpenseCategoryEnum.Other,
 			description: "",
 			amount: 0,
+			currency: ExpenseCurrencyEnum.EGP,
 		},
 	});
 
 	function onSubmit(data: z.infer<typeof formSchema>) {
-		toast("You submitted the following values:", {
-			id: "form-submission",
-			description: (
-				<pre className="bg-code text-primary mt-2 overflow-x-auto rounded-md p-4">
-					<code className="block whitespace-pre-wrap">
-						{JSON.stringify(data, null, 2)}
-					</code>
-				</pre>
-			),
-			position: "bottom-right",
-			duration: 3000,
-			classNames: {
-				content: "flex flex-col gap-2",
-			},
-			style: {
-				"--border-radius": "calc(var(--radius)  + 4px)",
-			} as React.CSSProperties,
-		});
+		toast.success("Expense Added Successfully!", { id: "expense-added", duration: 2000 });
 		const id = uuidv7();
 		onNewExpense({ ...data, id });
 		form.reset();

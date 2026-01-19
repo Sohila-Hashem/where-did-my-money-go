@@ -8,18 +8,28 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import type { Expense } from "@/domain/expense";
+import type { Expense, SupportedCurrencies } from "@/domain/expense";
 import { Trash2, Wallet } from "lucide-react";
 import { Button } from "./ui/button";
+import { useMemo } from "react";
+import { formatCurrency } from "@/lib/utils";
+import { ScrollArea } from "./ui/scroll-area";
 
 interface ExpensesListProps {
 	expenses: Expense[];
-    onDeleteExpense: (id: string) => void;
+	preferredCurrency?: SupportedCurrencies;
+	onDeleteExpense: (id: string) => void;
 }
-export const ExpensesList = ({ expenses, onDeleteExpense }: ExpensesListProps) => {
-    
+export const ExpensesList = ({
+	expenses,
+	onDeleteExpense,
+	preferredCurrency,
+}: ExpensesListProps) => {
+	const totalExpenses = useMemo(() => {
+		return expenses.reduce((sum, expense) => sum + expense.amount, 0);
+	}, [expenses]);
 	return (
-		<div className="w-full overflow-y-auto bg-accent p-4 rounded-lg shadow-lg">
+		<ScrollArea className="h-110 w-full rounded-lg border bg-accent p-4 shadow-sm">
 			{expenses.length === 0 ? (
 				<div className="flex flex-col items-center justify-center gap-3 ">
 					<Wallet className="text-muted-foreground" size={60} />
@@ -30,11 +40,11 @@ export const ExpensesList = ({ expenses, onDeleteExpense }: ExpensesListProps) =
 					<TableCaption>A list of your recent expenses.</TableCaption>
 					<TableHeader>
 						<TableRow>
-							<TableHead className="w-55">Description</TableHead>
-							<TableHead className="w-55">Date</TableHead>
-							<TableHead className="w-55">Category</TableHead>
-							<TableHead className="w-55 text-right">Amount</TableHead>
-							<TableHead className="w-55"></TableHead>
+							<TableHead>Description</TableHead>
+							<TableHead>Date</TableHead>
+							<TableHead>Category</TableHead>
+							<TableHead className="text-right">Amount</TableHead>
+							<TableHead className="w-[50px]"></TableHead>
 						</TableRow>
 					</TableHeader>
 					<TableBody>
@@ -43,11 +53,13 @@ export const ExpensesList = ({ expenses, onDeleteExpense }: ExpensesListProps) =
 								<TableCell className="text-start">{expense.description}</TableCell>
 								<TableCell className="text-start">{expense.date}</TableCell>
 								<TableCell className="text-start">{expense.category}</TableCell>
-								<TableCell className="text-right">{expense.amount}</TableCell>
+								<TableCell className="text-right">
+									{formatCurrency(expense.amount, preferredCurrency)}
+								</TableCell>
 								<TableCell className="text-right">
 									{
 										<Button
-                                            className="cursor-pointer"
+											className="cursor-pointer"
 											variant={"destructive"}
 											size={"icon-sm"}
 											onClick={() => onDeleteExpense(expense.id)}
@@ -63,12 +75,12 @@ export const ExpensesList = ({ expenses, onDeleteExpense }: ExpensesListProps) =
 						<TableRow>
 							<TableCell colSpan={3}>Total</TableCell>
 							<TableCell className="text-right">
-								{expenses.reduce((sum, expense) => sum + expense.amount, 0)}
+								{formatCurrency(totalExpenses, preferredCurrency)}
 							</TableCell>
 						</TableRow>
 					</TableFooter>
 				</Table>
 			)}
-		</div>
+		</ScrollArea>
 	);
 };

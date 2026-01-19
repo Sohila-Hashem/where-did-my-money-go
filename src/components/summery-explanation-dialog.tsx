@@ -1,0 +1,54 @@
+interface SummeryExplanationDialogProps {
+	onClose: () => void;
+	summeryExplanation: ExplanationItem[];
+}
+
+import { Button } from "@/components/ui/button";
+import {
+	Dialog,
+	DialogClose,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
+import type { ExplanationItem } from "@/domain/aggregate";
+import { useState } from "react";
+
+export function SummeryExplanationDialog({
+	onClose,
+	summeryExplanation,
+}: SummeryExplanationDialogProps) {
+	const [open, setOpen] = useState(true);
+	const onOpenChange = (open: boolean) => {
+		if (!open) {
+			onClose();
+		}
+		setOpen(open);
+	};
+	return (
+		<Dialog open={open} onOpenChange={onOpenChange}>
+			<DialogContent className="sm:max-w-106.25">
+				<DialogHeader>
+					<DialogTitle>Summery</DialogTitle>
+					<DialogDescription>
+						<ul className="list-disc pl-5 space-y-2">
+							{summeryExplanation.map((item) => (
+								<li key={item.id}>{item.text}</li>
+							))}
+						</ul>
+					</DialogDescription>
+				</DialogHeader>
+				<DialogFooter>
+					<DialogClose asChild>
+						<Button variant="outline">Ok, i will remember</Button>
+					</DialogClose>
+					<DialogClose asChild>
+						<Button>Yes i know</Button>
+					</DialogClose>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
+	);
+}
