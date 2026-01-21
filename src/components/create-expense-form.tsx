@@ -50,14 +50,20 @@ interface CreateExpenseFormProps {
 export function CreateExpenseForm({ onNewExpense }: CreateExpenseFormProps) {
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
+		defaultValues: {
+			amount: undefined,
+			category: undefined,
+			description: undefined,
+			date: undefined,
+		},
 	});
 
 	function onSubmit(data: z.infer<typeof formSchema>) {
 		toast.success("Expense Added Successfully!", { id: "expense-added", duration: 2000 });
 		const id = uuidv7();
 		onNewExpense({ ...data, id, date: formatDate(data.date) });
-		form.reset({});
-	}
+		form.reset()
+	} 1
 
 	return (
 		<Card className="w-full sm:max-w-md bg-accent text-primary shadow-lg">
@@ -79,6 +85,7 @@ export function CreateExpenseForm({ onNewExpense }: CreateExpenseFormProps) {
 									<InputGroup>
 										<InputGroupInput
 											{...field}
+											value={field.value ?? ""}
 											id="form-rhf-demo-description"
 											placeholder="e.g. Date with my wife, Family get-together, etc."
 											className="resize-none"
@@ -106,6 +113,7 @@ export function CreateExpenseForm({ onNewExpense }: CreateExpenseFormProps) {
 										<InputGroupInput
 											{...field}
 											type="number"
+											value={field.value ?? ""}
 											id="form-rhf-demo-amount"
 											placeholder="e.g. 25.50"
 											className="min-h-24 resize-none"
@@ -142,11 +150,11 @@ export function CreateExpenseForm({ onNewExpense }: CreateExpenseFormProps) {
 									<FieldLabel htmlFor="form-rhf-demo-category">
 										Category
 									</FieldLabel>
-									<Select {...field} value={field.value} onValueChange={field.onChange}>
+									<Select {...field} value={field.value ?? ""} onValueChange={field.onChange}>
 										<SelectTrigger className="w-full">
 											<SelectValue placeholder="Select a category" />
 										</SelectTrigger>
-										<SelectContent>
+										<SelectContent position="popper">
 											<SelectGroup>
 												<SelectLabel>Categories</SelectLabel>
 												{Object.values(ExpenseCategoryEnum).map(

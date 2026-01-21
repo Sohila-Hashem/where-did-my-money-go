@@ -13,7 +13,7 @@ import { Trash2, Wallet } from "lucide-react";
 import { Button } from "./ui/button";
 import { useMemo } from "react";
 import { formatCurrency } from "@/lib/utils";
-import { ScrollArea } from "./ui/scroll-area";
+import { ScrollArea, ScrollBar } from "./ui/scroll-area";
 
 interface ExpensesListProps {
 	expenses: Expense[];
@@ -36,6 +36,7 @@ export const ExpensesList = ({
 			</div>
 		) : (
 			<ScrollArea className="h-110 w-full rounded-lg border bg-accent p-4 shadow-sm">
+				<ScrollBar orientation="horizontal" />
 				<Table className="text-primary">
 					<TableCaption>A list of your recent expenses.</TableCaption>
 					<TableHeader>

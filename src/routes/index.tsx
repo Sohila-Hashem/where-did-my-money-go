@@ -11,7 +11,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { generateMonthlyExplanation, getMonthlySummary, type ExplanationItem } from "@/domain/aggregate";
-import { ExpenseCurrencyEnum, type Expense, type SupportedCurrencies } from "@/domain/expense";
+import { ExpenseCurrencyEnum, getFilteredExpenses, type Expense, type SupportedCurrencies } from "@/domain/expense";
 import {
 	deleteExpense,
 	loadExpenses,
@@ -20,20 +20,22 @@ import {
 	savePreferredCurrency,
 } from "@/utils/storage";
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { SummeryExplanationDialog } from "@/components/summery-explanation-dialog";
 import { compareMonths, generateComparisonExplanation } from "@/domain/compare";
 import { MonthComparisonExplanationDialog } from "@/components/month-comparison-eplanation-dialog";
 import { MONTHS } from "@/lib/cosntants";
 import { toast } from "sonner";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { CircleAlert } from "lucide-react";
+import { canGenerateComparisonReport, canGenerateReport } from "@/lib/permissions.";
 
 export const Route = createFileRoute("/")({
 	component: RouteComponent,
 });
 
 function RouteComponent() {
-	const currentMonthIndex = new Date().getMonth();
-	const previousMonthIndex = currentMonthIndex - 1 < 0 ? 11 : currentMonthIndex - 1;
+	// * state
 	const [expenses, setExpenses] = useState<Expense[]>(loadExpenses());
 	const recordedMonths = useMemo(
 		() => {
@@ -47,11 +49,16 @@ function RouteComponent() {
 	const [preferredCurrency, setPreferredCurrency] = useState<SupportedCurrencies>(
 		loadPreferredCurrency() || ExpenseCurrencyEnum.EGP,
 	);
-	const [selectedMonth, setSelectedMonth] = useState<string>(MONTHS[currentMonthIndex]);
+	const [selectedMonth, setSelectedMonth] = useState<string | undefined>();
 	const [summeryExplanation, setSummeryExplanation] = useState<ExplanationItem[]>([]);
 	const [monthComparisonExplanation, setMonthComparisonExplanation] = useState<ExplanationItem[]>([]);
 
+	// * helpers
+	const currentMonthIndex = selectedMonth ? MONTHS.indexOf(selectedMonth) : undefined;
+	const previousMonthIndex = currentMonthIndex && currentMonthIndex - 1
+	const previousMonth = previousMonthIndex !== undefined ? MONTHS[previousMonthIndex] : undefined
 
+	// * handlers
 	const onNewExpense = (newExpense: Expense) => {
 		setExpenses((prevExpenses) => [...prevExpenses, newExpense]);
 		saveExpense(newExpense);
@@ -62,16 +69,11 @@ function RouteComponent() {
 		deleteExpense(id);
 	};
 
-	const getFilteredExpenses = useCallback((month: string) => {
-		const selectedMonthIndex = MONTHS.indexOf(month);
-		const filteredExpenses = expenses.filter((expense) => {
-			const expenseDate = new Date(expense.date);
-			return expenseDate.getMonth() === selectedMonthIndex;
-		});
-		return filteredExpenses;
-	}, [expenses]);
-
 	const onMonthChange = (month: string) => {
+		if (month === 'all') {
+			setSelectedMonth(undefined);
+			return;
+		}
 		setSelectedMonth(month);
 	};
 
@@ -80,8 +82,27 @@ function RouteComponent() {
 		savePreferredCurrency(currency);
 	};
 
+	const onGenerateReport = (month: string) => {
+		const { isValid, message } = canGenerateReport(month, expenses);
+		if (!isValid) {
+			toast.info(message || "You have no data for the selected month. Start by adding expenses for the selected month.");
+			return;
+		}
+		generateMonthSummeryExplanation(month);
+	};
+
+	const onGenerateComparisonReport = (month: string, previousMonth: string | undefined) => {
+		const { isValid, message } = canGenerateComparisonReport(month, expenses);
+		if (!isValid) {
+			toast.info(message || "You have no data for the selected month. Start by adding expenses for the selected month.");
+			return;
+		}
+		generateMonthComparisonExplanation(month, previousMonth);
+	};
+
 	const generateMonthSummeryExplanation = (month: string) => {
-		const summery = getMonthlySummary(expenses, month);
+		const filteredMonthExpenses = getFilteredExpenses(month, expenses);
+		const summery = getMonthlySummary(filteredMonthExpenses, month);
 		const summeryExplanation = generateMonthlyExplanation(summery, preferredCurrency);
 		setSummeryExplanation(summeryExplanation);
 	};
@@ -91,11 +112,11 @@ function RouteComponent() {
 			toast.info("You have no data for the previous month. Start by adding expenses for the previous month.");
 			return;
 		}
-		const previousMonthSummery = getMonthlySummary(getFilteredExpenses(previousMonth), previousMonth);
-		const currentMonthSummery = getMonthlySummary(getFilteredExpenses(month), month);
+		const previousMonthSummery = getMonthlySummary(getFilteredExpenses(previousMonth, expenses), previousMonth);
+		const currentMonthSummery = getMonthlySummary(getFilteredExpenses(month, expenses), month);
 
 		const comparisonExplanation = compareMonths(currentMonthSummery, previousMonthSummery);
-		const explanation = generateComparisonExplanation(comparisonExplanation);
+		const explanation = generateComparisonExplanation(comparisonExplanation, preferredCurrency);
 		setMonthComparisonExplanation(explanation);
 	};
 
@@ -122,13 +143,14 @@ function RouteComponent() {
 			<div className="grid place-items-center grid-cols-1 md:grid-cols-2 w-full max-w-6xl">
 				<div className="w-full flex flex-col gap-5">
 					<div className="grid grid-cols-2 gap-2 justify-center items-center">
-						<Select defaultValue={MONTHS[currentMonthIndex]} onValueChange={onMonthChange}>
+						<Select defaultValue="all" onValueChange={onMonthChange}>
 							<SelectTrigger className="w-full bg-accent rounded-xl">
 								<SelectValue placeholder="Select a Month" />
 							</SelectTrigger>
 							<SelectContent>
 								<SelectGroup>
 									<SelectLabel>Months</SelectLabel>
+									<SelectItem value={"all"}>All Months</SelectItem>
 									{recordedMonths.map((month) => (
 										<SelectItem key={month} value={month}>
 											{month}
@@ -154,25 +176,36 @@ function RouteComponent() {
 						</Select>
 					</div>
 					<ExpensesList
-						expenses={getFilteredExpenses(selectedMonth)}
+						expenses={selectedMonth ? getFilteredExpenses(selectedMonth, expenses) : expenses}
 						onDeleteExpense={onDeleteExpense}
 						preferredCurrency={preferredCurrency}
 					/>
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-						<Button
-							className="cursor-pointer"
-							disabled={!getFilteredExpenses(selectedMonth).length || !selectedMonth}
-							onClick={(_e) => generateMonthSummeryExplanation(selectedMonth)}
-						>
-							Generate Report
-						</Button>
-						<Button
-							className="cursor-pointer"
-							disabled={!getFilteredExpenses(selectedMonth).length || !selectedMonth}
-							onClick={(_e) => generateMonthComparisonExplanation(selectedMonth, MONTHS[previousMonthIndex])}
-						>
-							Compare with previous month
-						</Button>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									onClick={(_e) => selectedMonth && onGenerateReport(selectedMonth)}>
+									Generate Report
+									{!canGenerateReport(selectedMonth, expenses) && <CircleAlert className="text-amber-400" />}
+								</Button>
+							</TooltipTrigger>
+							{!canGenerateReport(selectedMonth, expenses) ? <TooltipContent>
+								<p>Select a month and make sure there are expenses</p>
+							</TooltipContent> : null}
+						</Tooltip>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									onClick={(_e) => selectedMonth && onGenerateComparisonReport(selectedMonth, previousMonth)}
+								>
+									Compare with previous month
+									{!canGenerateComparisonReport(selectedMonth, expenses) && <CircleAlert className="text-amber-400" />}
+								</Button>
+							</TooltipTrigger>
+							{!canGenerateComparisonReport(selectedMonth, expenses) ? <TooltipContent>
+								<p>Make sure you have expenses for the selected month and the previous month</p>
+							</TooltipContent> : null}
+						</Tooltip>
 					</div>
 				</div>
 				<CreateExpenseForm onNewExpense={onNewExpense} />

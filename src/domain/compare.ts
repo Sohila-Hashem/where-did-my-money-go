@@ -1,5 +1,6 @@
+import { formatCurrency } from "@/lib/utils";
 import type { ExplanationItem, MonthlyExpenseSummary } from "./aggregate";
-import { ExpenseCategoryEnum, type ExpenseCategories } from "./expense";
+import { ExpenseCategoryEnum, type ExpenseCategories, type SupportedCurrencies } from "./expense";
 
 export interface MonthComaprison {
     totalChange: number,
@@ -36,14 +37,14 @@ export const compareMonths = (current: MonthlyExpenseSummary, previous: MonthlyE
 }
 
 
-export const generateComparisonExplanation = (comparison: MonthComaprison): ExplanationItem[] => {
+export const generateComparisonExplanation = (comparison: MonthComaprison, preferredCurrency?: SupportedCurrencies): ExplanationItem[] => {
     const explanation: ExplanationItem[] = [];
     const decreasedCategories = Object.entries(comparison.categroyChanges).filter(([_, change]) => change < 0).map(([category]) => category);
     const increasedCategories = Object.entries(comparison.categroyChanges).filter(([_, change]) => change > 0).map(([category]) => category);
 
     explanation.push({
         id: "total-change",
-        text: `Your spending ${comparison.totalChange > 0 ? "increased" : "decreased"} by ${Math.abs(comparison.totalChange)} (${comparison.percentChange.toFixed(2)}%)`,
+        text: `Your spending ${comparison.totalChange > 0 ? "increased" : "decreased"} by ${formatCurrency(Math.abs(comparison.totalChange), preferredCurrency)} (${comparison.percentChange ? comparison.percentChange.toFixed(2) : 0}%)`,
         type: "pattern",
         importance: "high"
     });
