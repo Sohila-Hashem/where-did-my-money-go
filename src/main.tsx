@@ -1,5 +1,6 @@
 import { StrictMode } from 'react'
 import ReactDOM from 'react-dom/client'
+import { ThemeProvider } from "@/components/theme-provider"
 import { RouterProvider, createRouter } from '@tanstack/react-router'
 
 // Import the generated route tree
@@ -31,7 +32,9 @@ if (rootElement && !rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement)
   root.render(
     <StrictMode>
-      <RouterProvider router={router} />
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+        <RouterProvider router={router} />
+      </ThemeProvider>
     </StrictMode>,
   )
 }

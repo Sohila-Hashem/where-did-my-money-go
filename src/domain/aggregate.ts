@@ -1,87 +1,74 @@
-import { formatCurrency } from "@/lib/utils"
-import { ExpenseCategoryEnum, type Expense, type ExpenseCategories, type SupportedCurrencies } from "./expense"
+import { endOfMonth, format, startOfMonth } from "date-fns";
+import type { Expense } from "./expense";
+import { formatCurrency } from "@/lib/utils";
 
-export interface ExplanationItem {
-    id: string;
-    type: "summary" | "category" | "pattern";
-    text: string;
-    importance: "high" | "medium" | "low";
-}
+export function generateMonthlyReport(
+    expenses: Expense[],
+    month: string,
+    currencySymbol: string
+): string {
+    const monthDate = new Date(month + "-01");
+    const monthStart = startOfMonth(monthDate);
+    const monthEnd = endOfMonth(monthDate);
 
-export interface MonthlyExpenseSummary {
-    month: string
-    totalSpent: number
-    dailyAverage: number
-    categoryTotals: Record<ExpenseCategories, number>
-    categoryPercentages: Record<ExpenseCategories, number>
-    transactionCount: number
-}
-
-export const getMonthlySummary = (expenses: Expense[], month: string): MonthlyExpenseSummary => {
-    const categoryTotals: Record<ExpenseCategories, number> = Object.fromEntries(
-        Object.values(ExpenseCategoryEnum).map(category => [category, 0])
-    ) as Record<ExpenseCategories, number>;
-
-    let totalSpent = 0;
-    let transactionCount = 0;
-
-    expenses.forEach(expense => {
-        categoryTotals[expense.category] += expense.amount;
-        totalSpent += expense.amount;
-        transactionCount++;
+    const monthExpenses = expenses.filter((exp) => {
+        const expDate = new Date(exp.date);
+        return expDate >= monthStart && expDate <= monthEnd;
     });
 
-    const dailyAverage = totalSpent / (new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate());
+    if (monthExpenses.length === 0) {
+        return `You didn't record any expenses for ${format(monthDate, "MMMM yyyy")}. Either you're living like a hermit or you forgot to track! 🏝️`;
+    }
 
-    const categoryPercentages: Record<ExpenseCategories, number> = Object.fromEntries(
-        Object.entries(categoryTotals).map(([category, total]) => [
-            category,
-            totalSpent ? (total / totalSpent) * 100 : 0
-        ])
-    ) as Record<ExpenseCategories, number>;
+    const total = monthExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+    const avgPerExpense = total / monthExpenses.length;
 
-    return {
-        month,
-        totalSpent,
-        dailyAverage,
-        categoryTotals,
-        categoryPercentages,
-        transactionCount
-    };
-}
+    // Category breakdown
+    const categoryTotals: Record<string, number> = {};
+    monthExpenses.forEach((exp) => {
+        categoryTotals[exp.category] = (categoryTotals[exp.category] || 0) + exp.amount;
+    });
 
-export const generateMonthlyExplanation = (summary: MonthlyExpenseSummary, preferredCurrency?: SupportedCurrencies): ExplanationItem[] => {
-    const topCategory = Object.entries(summary.categoryTotals).reduce((a, b) => a[1] > b[1] ? a : b)[0];
-    const topCategoryPercentage = summary.categoryPercentages[topCategory as ExpenseCategories].toFixed(2);
-    let explanations: ExplanationItem[] = [];
+    const topCategory = Object.entries(categoryTotals).sort(
+        ([, a], [, b]) => b - a
+    )[0];
 
-    explanations.push({
-        id: "total",
-        type: "summary",
-        text: `You spent ${formatCurrency(summary.totalSpent, preferredCurrency)} in ${summary.month}.`,
-        importance: "high"
-    })
+    const dailyAvg = total / new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0).getDate();
 
-    explanations.push({
-        id: "daily-average",
-        type: "summary",
-        text: `Your daily average spending was ${formatCurrency(summary.dailyAverage, preferredCurrency)}.`,
-        importance: "medium"
-    })
+    // Generate insights
+    let report = `📊 **${format(monthDate, "MMMM yyyy")} Money Snapshot**\n\n`;
 
-    explanations.push({
-        id: "top-category",
-        type: "category",
-        text: `${topCategory} was your biggest expense, making up ${topCategoryPercentage}% of your total spending.`,
-        importance: "high"
-    })
+    report += `You spent a total of **${formatCurrency(total, currencySymbol)}** across ${monthExpenses.length} transactions. `;
+    report += `That's an average of ${formatCurrency(dailyAvg, currencySymbol)} per day.\n\n`;
 
-    explanations.push({
-        id: "transaction-count",
-        type: "summary",
-        text: `You made ${summary.transactionCount} transactions in ${summary.month}.`,
-        importance: "low"
-    })
+    report += `🎯 **Where It Went:**\n`;
+    report += `Your biggest spending category was **${topCategory[0]}** at ${formatCurrency(topCategory[1], currencySymbol)} `;
+    report += `(${((topCategory[1] / total) * 100).toFixed(1)}% of your total). `;
 
-    return explanations;
+    if (topCategory[1] / total > 0.4) {
+        report += `Whoa! That's nearly half your budget. Might be worth keeping an eye on! 👀\n\n`;
+    } else if (topCategory[1] / total > 0.3) {
+        report += `That's a significant chunk, but nothing too wild. 🎯\n\n`;
+    } else {
+        report += `Nice balance! You're spreading things out pretty well. ✨\n\n`;
+    }
+
+    report += `💸 **Transaction Vibes:**\n`;
+    if (avgPerExpense < 20) {
+        report += `Your average transaction was ${formatCurrency(avgPerExpense, currencySymbol)}. Lots of small purchases! The death by a thousand paper cuts approach. ☕\n\n`;
+    } else if (avgPerExpense < 100) {
+        report += `Your average transaction was ${formatCurrency(avgPerExpense, currencySymbol)}. A healthy mix of everyday spending. 🛒\n\n`;
+    } else {
+        report += `Your average transaction was ${formatCurrency(avgPerExpense, currencySymbol)}. You like to go big! Making those meaningful purchases. 🎁\n\n`;
+    }
+
+    // Category breakdown
+    const sortedCategories = Object.entries(categoryTotals).sort(([, a], [, b]) => b - a);
+    report += `📈 **Category Breakdown:**\n`;
+    sortedCategories.forEach(([cat, amount]) => {
+        const percentage = ((amount / total) * 100).toFixed(1);
+        report += `• ${cat}: ${currencySymbol}${amount.toFixed(2)} (${percentage}%)\n`;
+    });
+
+    return report;
 }
