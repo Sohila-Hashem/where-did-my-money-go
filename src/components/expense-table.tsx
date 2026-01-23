@@ -4,7 +4,7 @@ import { Pencil, Trash2 } from "lucide-react";
 import { motion } from "motion/react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import {
     Table,
     TableBody,
@@ -127,6 +127,7 @@ export function ExpenseTable({
                             <>
                                 <div className="rounded-lg border">
                                     <ScrollArea className="h-56">
+                                        <ScrollBar orientation="horizontal" />
                                         <Table>
                                             <TableHeader>
                                                 <TableRow>
