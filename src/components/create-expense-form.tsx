@@ -30,14 +30,16 @@ import {
 	SelectValue,
 } from "./ui/select";
 import { v7 as uuidv7 } from "uuid";
+import Calendar22 from "./calendar-22";
+import { formatDate } from "@/lib/utils";
 
 const formSchema = z.strictObject({
 	description: z
 		.string()
 		.min(1, "Description must be at least 1 character.")
 		.max(100, "Description must be at most 100 characters."),
-	amount: z.coerce.number().min(0.1, "Amount must be at least 0.1."),
-	date: z.iso.date("Date is required."),
+	amount: z.coerce.number<number>().min(0.1, "Amount must be at least 0.1."),
+	date: z.date("Transaction Date is required."),
 	category: z.enum(ExpenseCategoryEnum, "Category is required."),
 	currency: z.enum(ExpenseCurrencyEnum, "Currency is required."),
 });
@@ -50,20 +52,19 @@ export function CreateExpenseForm({ onNewExpense }: CreateExpenseFormProps) {
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
-			date: new Date().toLocaleDateString("en-CA"), // Set default date to today in YYYY-MM-DD format
-			category: ExpenseCategoryEnum.Other,
-			description: "",
-			amount: 0,
-			currency: ExpenseCurrencyEnum.EGP,
+			amount: undefined,
+			category: undefined,
+			description: undefined,
+			date: undefined,
 		},
 	});
 
 	function onSubmit(data: z.infer<typeof formSchema>) {
 		toast.success("Expense Added Successfully!", { id: "expense-added", duration: 2000 });
 		const id = uuidv7();
-		onNewExpense({ ...data, id });
-		form.reset();
-	}
+		onNewExpense({ ...data, id, date: formatDate(data.date) });
+		form.reset()
+	} 1
 
 	return (
 		<Card className="w-full sm:max-w-md bg-accent text-primary shadow-lg">
@@ -85,6 +86,7 @@ export function CreateExpenseForm({ onNewExpense }: CreateExpenseFormProps) {
 									<InputGroup>
 										<InputGroupInput
 											{...field}
+											value={field.value ?? ""}
 											id="form-rhf-demo-description"
 											placeholder="e.g. Date with my wife, Family get-together, etc."
 											className="resize-none"
@@ -92,7 +94,7 @@ export function CreateExpenseForm({ onNewExpense }: CreateExpenseFormProps) {
 										/>
 										<InputGroupAddon align="block-end">
 											<InputGroupText className="tabular-nums text-xs text-muted-foreground ms-auto">
-												{field.value.length}/100
+												{field?.value?.length ?? 0}/100
 											</InputGroupText>
 										</InputGroupAddon>
 									</InputGroup>
@@ -112,6 +114,7 @@ export function CreateExpenseForm({ onNewExpense }: CreateExpenseFormProps) {
 										<InputGroupInput
 											{...field}
 											type="number"
+											value={field.value ?? ""}
 											id="form-rhf-demo-amount"
 											placeholder="e.g. 25.50"
 											className="min-h-24 resize-none"
@@ -129,16 +132,11 @@ export function CreateExpenseForm({ onNewExpense }: CreateExpenseFormProps) {
 							control={form.control}
 							render={({ field, fieldState }) => (
 								<Field data-invalid={fieldState.invalid}>
-									<FieldLabel htmlFor="form-rhf-demo-date">Date</FieldLabel>
-									<InputGroup>
-										<InputGroupInput
-											{...field}
-											type="date"
-											id="form-rhf-demo-date"
-											className="min-h-24 resize-none"
-											aria-invalid={fieldState.invalid}
-										/>
-									</InputGroup>
+									<FieldLabel htmlFor="form-rhf-demo-date">Transaction Date</FieldLabel>
+									<Calendar22
+										value={field.value ? new Date(field.value) : undefined}
+										onChange={field.onChange}
+									/>
 									{fieldState.invalid && (
 										<FieldError errors={[fieldState.error]} />
 									)}
@@ -153,11 +151,11 @@ export function CreateExpenseForm({ onNewExpense }: CreateExpenseFormProps) {
 									<FieldLabel htmlFor="form-rhf-demo-category">
 										Category
 									</FieldLabel>
-									<Select {...field} onValueChange={field.onChange}>
+									<Select {...field} value={field.value ?? ""} onValueChange={field.onChange}>
 										<SelectTrigger className="w-full">
 											<SelectValue placeholder="Select a category" />
 										</SelectTrigger>
-										<SelectContent>
+										<SelectContent position="popper">
 											<SelectGroup>
 												<SelectLabel>Categories</SelectLabel>
 												{Object.values(ExpenseCategoryEnum).map(

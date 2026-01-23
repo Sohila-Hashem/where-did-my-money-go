@@ -1,5 +1,7 @@
-export type ExpenseCategories = keyof typeof ExpenseCategoryEnum;
-export type SupportedCurrencies = keyof typeof ExpenseCurrencyEnum;
+import { MONTHS } from "@/lib/cosntants";
+
+export type ExpenseCategories = ExpenseCategoryEnum;
+export type SupportedCurrencies = ExpenseCurrencyEnum;
 
 export enum ExpenseCategoryEnum {
     Food = 'Food',
@@ -45,3 +47,12 @@ export interface Expense {
     category: ExpenseCategories;
     description: string;
 }
+
+export const getFilteredExpenses = (month: string, expenses: Expense[]) => {
+    const selectedMonthIndex = MONTHS.indexOf(month);
+    const filteredExpenses = expenses.filter((expense) => {
+        const expenseDate = new Date(expense.date);
+        return expenseDate.getMonth() === selectedMonthIndex;
+    });
+    return filteredExpenses;
+};

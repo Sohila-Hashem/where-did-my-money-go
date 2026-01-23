@@ -32,20 +32,18 @@ export function SummeryExplanationDialog({
 			<DialogContent className="sm:max-w-106.25">
 				<DialogHeader>
 					<DialogTitle>Summery</DialogTitle>
-					<DialogDescription>
-						<ul className="list-disc pl-5 space-y-2">
-							{summeryExplanation.map((item) => (
-								<li key={item.id}>{item.text}</li>
-							))}
-						</ul>
-					</DialogDescription>
+					<ul className="list-disc pl-5 space-y-2">
+						{summeryExplanation.map((item) => (
+							<li key={item.id}><DialogDescription>{item.text}</DialogDescription></li>
+						))}
+					</ul>
 				</DialogHeader>
 				<DialogFooter>
 					<DialogClose asChild>
-						<Button variant="outline">Ok, i will remember</Button>
+						<Button variant="outline">Yes, I know!</Button>
 					</DialogClose>
 					<DialogClose asChild>
-						<Button>Yes i know</Button>
+						<Button>Ok, i will remember</Button>
 					</DialogClose>
 				</DialogFooter>
 			</DialogContent>

@@ -13,7 +13,7 @@ import { Trash2, Wallet } from "lucide-react";
 import { Button } from "./ui/button";
 import { useMemo } from "react";
 import { formatCurrency } from "@/lib/utils";
-import { ScrollArea } from "./ui/scroll-area";
+import { ScrollArea, ScrollBar } from "./ui/scroll-area";
 
 interface ExpensesListProps {
 	expenses: Expense[];
@@ -29,13 +29,14 @@ export const ExpensesList = ({
 		return expenses.reduce((sum, expense) => sum + expense.amount, 0);
 	}, [expenses]);
 	return (
-		<ScrollArea className="h-110 w-full rounded-lg border bg-accent p-4 shadow-sm">
-			{expenses.length === 0 ? (
-				<div className="flex flex-col items-center justify-center gap-3 ">
-					<Wallet className="text-muted-foreground" size={60} />
-					<p className="text-center text-muted-foreground">No expenses recorded yet.</p>
-				</div>
-			) : (
+		expenses.length === 0 ? (
+			<div className="flex flex-col items-center justify-center h-110 w-full rounded-lg border bg-accent p-4 shadow-sm">
+				<Wallet className="text-muted-foreground" size={60} />
+				<p className="text-center text-muted-foreground">No expenses recorded yet.</p>
+			</div>
+		) : (
+			<ScrollArea className="h-110 w-full rounded-lg border bg-accent p-4 shadow-sm">
+				<ScrollBar orientation="horizontal" />
 				<Table className="text-primary">
 					<TableCaption>A list of your recent expenses.</TableCaption>
 					<TableHeader>
@@ -80,7 +81,7 @@ export const ExpensesList = ({
 						</TableRow>
 					</TableFooter>
 				</Table>
-			)}
-		</ScrollArea>
+			</ScrollArea>
+		)
 	);
 };
