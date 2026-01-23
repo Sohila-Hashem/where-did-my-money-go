@@ -9,15 +9,8 @@ export function formatCurrency(amount: number, currency: string = 'USD', locale:
   return new Intl.NumberFormat(locale, {
     style: 'currency',
     currency,
+    currencyDisplay: 'narrowSymbol',
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(amount);
-}
-
-export function formatDate(date: Date, locale: string = 'en-US'): string {
-  return date.toLocaleDateString(locale, {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit"
-  });
 }

@@ -1,45 +1,34 @@
-import { MONTHS } from "@/lib/cosntants";
+export const CATEGORIES = [
+    { category: 'Food' },
+    { category: 'Transport' },
+    { category: 'Utilities' },
+    { category: 'Entertainment' },
+    { category: 'Health' },
+    { category: 'Wearables' },
+    { category: 'Travel' },
+    { category: 'Subscriptions' },
+    { category: 'Self Care' },
+    { category: 'Gifts' },
+    { category: 'Medical' },
+    { category: 'Education' },
+    { category: 'Installments' },
+    { category: 'Debt Payment' },
+    { category: 'Withdrawals' },
+    { category: 'Bills' },
+    { category: 'Donations' },
+    { category: 'Bank Fees' },
+    { category: 'Fees' },
+    { category: 'Investments' },
+    { category: 'Savings' },
+    { category: 'Loans' },
+    { category: 'Taxes' },
+    { category: 'Insurance' },
+    { category: 'Transfers' },
+    { category: 'Other' },
+] as const
 
-export type ExpenseCategories = ExpenseCategoryEnum;
-export type SupportedCurrencies = ExpenseCurrencyEnum;
+export type ExpenseCategories = (typeof CATEGORIES)[number]['category'];
 
-export enum ExpenseCategoryEnum {
-    Food = 'Food',
-    Transport = 'Transport',
-    Utilities = 'Utilities',
-    Entertainment = 'Entertainment',
-    Health = 'Health',
-    Wearables = 'Wearables',
-    Travel = 'Travel',
-    Subscriptions = 'Subscriptions',
-    SelfCare = 'Self Care',
-    Gifts = 'Gifts',
-    Medical = 'Medical',
-    Education = 'Education',
-    Installments = 'Installments',
-    DebtPayment = 'Debt Payment',
-    Withdrawals = 'Withdrawals',
-    Bills = 'Bills',
-    Donations = 'Donations',
-    BankFees = 'Bank Fees',
-    Fees = 'Fees',
-    Investments = 'Investments',
-    Savings = 'Savings',
-    Loans = 'Loans',
-    Taxes = 'Taxes',
-    Insurance = 'Insurance',
-    Transfers = 'Transfers',
-    Other = 'Other',
-}
-export enum ExpenseCurrencyEnum {
-    EGP = 'EGP',
-    USD = 'USD',
-    EUR = 'EUR',
-    GBP = 'GBP',
-    JPY = 'JPY',
-    CNY = 'CNY',
-    INR = 'INR',
-}
 export interface Expense {
     id: string;
     amount: number;
@@ -47,12 +36,3 @@ export interface Expense {
     category: ExpenseCategories;
     description: string;
 }
-
-export const getFilteredExpenses = (month: string, expenses: Expense[]) => {
-    const selectedMonthIndex = MONTHS.indexOf(month);
-    const filteredExpenses = expenses.filter((expense) => {
-        const expenseDate = new Date(expense.date);
-        return expenseDate.getMonth() === selectedMonthIndex;
-    });
-    return filteredExpenses;
-};

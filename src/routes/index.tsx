@@ -1,215 +1,156 @@
-import { CreateExpenseForm } from "@/components/create-expense-form";
-import { ExpensesList } from "@/components/expenses-list";
-import { Button } from "@/components/ui/button";
-import {
-	Select,
-	SelectContent,
-	SelectGroup,
-	SelectItem,
-	SelectLabel,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
-import { generateMonthlyExplanation, getMonthlySummary, type ExplanationItem } from "@/domain/aggregate";
-import { ExpenseCurrencyEnum, getFilteredExpenses, type Expense, type SupportedCurrencies } from "@/domain/expense";
-import {
-	deleteExpense,
-	loadExpenses,
-	loadPreferredCurrency,
-	saveExpense,
-	savePreferredCurrency,
-} from "@/utils/storage";
-import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import { SummeryExplanationDialog } from "@/components/summery-explanation-dialog";
-import { compareMonths, generateComparisonExplanation } from "@/domain/compare";
-import { MonthComparisonExplanationDialog } from "@/components/month-comparison-eplanation-dialog";
-import { MONTHS } from "@/lib/cosntants";
+import { createFileRoute } from '@tanstack/react-router'
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { CircleAlert } from "lucide-react";
-import { canGenerateComparisonReport, canGenerateReport } from "@/lib/permissions.";
+import { HeroSection } from "@/components/hero-section";
+import { CurrencySelector } from "@/components/currency-selector";
+import { ModeToggle } from "@/components/mode-toggle";
+import { ExpenseForm } from "@/components/expense-form";
+import { ExpenseTable } from "@/components/expense-table";
+import { MonthlyReport } from "@/components/monthly-report";
+import { MonthComparison } from "@/components/month-comparison";
+import { Confetti } from "@/components/confetti";
+import { type Currency, CURRENCIES } from "@/lib/constants";
+import { type Expense } from "@/domain/expense";
+import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
+import { deleteExpense, loadCurrency, loadExpenses, saveCurrency, saveExpenses, updateExpense } from '@/lib/storage';
+import { v7 as uuid7 } from 'uuid';
 
-export const Route = createFileRoute("/")({
-	component: RouteComponent,
-});
+export const Route = createFileRoute('/')({
+    component: RouteComponent,
+})
 
 function RouteComponent() {
-	// * state
-	const [expenses, setExpenses] = useState<Expense[]>(loadExpenses());
-	const recordedMonths = useMemo(
-		() => {
-			const months = new Set<string>()
-			expenses.forEach((expense) => months.add(MONTHS[new Date(expense.date).getMonth()]))
-			return Array.from(months).sort((a, b) => MONTHS.indexOf(a) - MONTHS.indexOf(b))
-		},
-		[expenses],
-	);
+    const [expenses, setExpenses] = useState<Expense[]>([]);
+    const [currency, setCurrency] = useState<Currency>(CURRENCIES[0]);
+    const [editingExpense, setEditingExpense] = useState<Expense | undefined>();
+    const [showConfetti, setShowConfetti] = useState(false);
+    const [isInitialized, setIsInitialized] = useState(false);
 
-	const [preferredCurrency, setPreferredCurrency] = useState<SupportedCurrencies>(
-		loadPreferredCurrency() || ExpenseCurrencyEnum.EGP,
-	);
-	const [selectedMonth, setSelectedMonth] = useState<string | undefined>();
-	const [summeryExplanation, setSummeryExplanation] = useState<ExplanationItem[]>([]);
-	const [monthComparisonExplanation, setMonthComparisonExplanation] = useState<ExplanationItem[]>([]);
+    // Load from localStorage on mount
+    useEffect(() => {
+        const storedExpenses = loadExpenses();
+        const storedCurrency = loadCurrency();
 
-	// * helpers
-	const currentMonthIndex = selectedMonth ? MONTHS.indexOf(selectedMonth) : undefined;
-	const previousMonthIndex = currentMonthIndex && currentMonthIndex - 1
-	const previousMonth = previousMonthIndex !== undefined ? MONTHS[previousMonthIndex] : undefined
+        if (storedExpenses) {
+            try {
+                setExpenses(storedExpenses);
+            } catch (e) {
+                console.error("Failed to parse expenses:", e);
+            }
+        }
 
-	// * handlers
-	const onNewExpense = (newExpense: Expense) => {
-		setExpenses((prevExpenses) => [...prevExpenses, newExpense]);
-		saveExpense(newExpense);
-	};
+        if (storedCurrency) {
+            try {
+                const found = CURRENCIES.find((c) => c.code === storedCurrency.code);
+                if (found) setCurrency(found);
+            } catch (e) {
+                console.error("Failed to parse currency:", e);
+            }
+        }
+        setIsInitialized(true);
+    }, []);
 
-	const onDeleteExpense = (id: string) => {
-		setExpenses((prevExpenses) => prevExpenses.filter((expense) => expense.id !== id));
-		deleteExpense(id);
-	};
+    // Save to localStorage when expenses change
+    useEffect(() => {
+        if (!isInitialized) return;
+        saveExpenses(expenses);
+    }, [expenses, isInitialized]);
 
-	const onMonthChange = (month: string) => {
-		if (month === 'all') {
-			setSelectedMonth(undefined);
-			return;
-		}
-		setSelectedMonth(month);
-	};
+    // Save to localStorage when currency changes
+    useEffect(() => {
+        if (!isInitialized) return;
+        saveCurrency(currency);
+    }, [currency, isInitialized]);
 
-	const onCurrencyChange = (currency: SupportedCurrencies) => {
-		setPreferredCurrency(currency);
-		savePreferredCurrency(currency);
-	};
+    const handleAddExpense = (expense: Omit<Expense, "id">) => {
+        const newExpense: Expense = {
+            ...expense,
+            id: uuid7(),
+        };
+        setExpenses([...expenses, newExpense]);
+        setShowConfetti(true);
+        setTimeout(() => setShowConfetti(false), 3000);
+        toast.success("Expense added successfully!");
+    };
 
-	const onGenerateReport = (month: string) => {
-		const { isValid, message } = canGenerateReport(month, expenses);
-		if (!isValid) {
-			toast.info(message || "You have no data for the selected month. Start by adding expenses for the selected month.");
-			return;
-		}
-		generateMonthSummeryExplanation(month);
-	};
+    const handleUpdateExpense = (expense: Expense) => {
+        setExpenses(updateExpense(expense, expenses));
+        setEditingExpense(undefined);
+        toast.success("Expense updated successfully!");
+    };
 
-	const onGenerateComparisonReport = (month: string, previousMonth: string | undefined) => {
-		const { isValid, message } = canGenerateComparisonReport(month, expenses);
-		if (!isValid) {
-			toast.info(message || "You have no data for the selected month. Start by adding expenses for the selected month.");
-			return;
-		}
-		generateMonthComparisonExplanation(month, previousMonth);
-	};
+    const handleDeleteExpense = (id: string) => {
+        setExpenses(deleteExpense(id, expenses));
+        toast.success("Expense deleted successfully!");
+    };
 
-	const generateMonthSummeryExplanation = (month: string) => {
-		const filteredMonthExpenses = getFilteredExpenses(month, expenses);
-		const summery = getMonthlySummary(filteredMonthExpenses, month);
-		const summeryExplanation = generateMonthlyExplanation(summery, preferredCurrency);
-		setSummeryExplanation(summeryExplanation);
-	};
+    const handleEditExpense = (expense: Expense) => {
+        setEditingExpense(expense);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    };
 
-	const generateMonthComparisonExplanation = (month: string, previousMonth: string | undefined) => {
-		if (previousMonth === undefined) {
-			toast.info("You have no data for the previous month. Start by adding expenses for the previous month.");
-			return;
-		}
-		const previousMonthSummery = getMonthlySummary(getFilteredExpenses(previousMonth, expenses), previousMonth);
-		const currentMonthSummery = getMonthlySummary(getFilteredExpenses(month, expenses), month);
+    return (
+        <div className="min-h-screen bg-background relative overflow-x-hidden">
+            {/* Animated background elements */}
+            <div className="fixed inset-0 pointer-events-none opacity-100">
+                <div className="absolute top-20 left-10 w-72 h-72 bg-primary/50 dark:bg-primary/30 rounded-full blur-3xl opacity-50 dark:opacity-100" />
+                <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/50 dark:bg-accent/30 rounded-full blur-3xl opacity-50 dark:opacity-100" />
+                <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-secondary/50 dark:bg-secondary/30 rounded-full blur-3xl opacity-50 dark:opacity-100" />
+            </div>
 
-		const comparisonExplanation = compareMonths(currentMonthSummery, previousMonthSummery);
-		const explanation = generateComparisonExplanation(comparisonExplanation, preferredCurrency);
-		setMonthComparisonExplanation(explanation);
-	};
+            {showConfetti && <Confetti trigger={showConfetti} />}
 
-	return (
-		<main className="flex flex-col items-center justify-center gap-5 md:gap-10 w-screen min-h-screen p-4 py-10 bg-background">
-			{summeryExplanation.length > 0 && (
-				<SummeryExplanationDialog
-					onClose={() => setSummeryExplanation([])}
-					summeryExplanation={summeryExplanation}
-				/>
-			)}
-			{monthComparisonExplanation.length > 0 && (
-				<MonthComparisonExplanationDialog
-					onClose={() => setMonthComparisonExplanation([])}
-					monthComparisonExplanation={monthComparisonExplanation}
-				/>
-			)}
-			<div className="flex flex-col items-center justify-center gap-2">
-				<h1 className="text-primary font-bold text-2xl text-center">Where did you spend your money?</h1>
-				<p className="font-medium text-lg text-muted-foreground text-center">
-					I will tell you where the hack did you spend most of your money!
-				</p>
-			</div>
-			<div className="grid place-items-center grid-cols-1 md:grid-cols-2 w-full max-w-6xl">
-				<div className="w-full flex flex-col gap-5">
-					<div className="grid grid-cols-2 gap-2 justify-center items-center">
-						<Select defaultValue="all" onValueChange={onMonthChange}>
-							<SelectTrigger className="w-full bg-accent rounded-xl">
-								<SelectValue placeholder="Select a Month" />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectGroup>
-									<SelectLabel>Months</SelectLabel>
-									<SelectItem value={"all"}>All Months</SelectItem>
-									{recordedMonths.map((month) => (
-										<SelectItem key={month} value={month}>
-											{month}
-										</SelectItem>
-									))}
-								</SelectGroup>
-							</SelectContent>
-						</Select>
-						<Select value={preferredCurrency} onValueChange={onCurrencyChange}>
-							<SelectTrigger className="w-full bg-accent rounded-xl">
-								<SelectValue placeholder="Select a Currency" />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectGroup>
-									<SelectLabel>Currencies</SelectLabel>
-									{Object.values(ExpenseCurrencyEnum).map((currency) => (
-										<SelectItem key={currency} value={currency}>
-											{currency}
-										</SelectItem>
-									))}
-								</SelectGroup>
-							</SelectContent>
-						</Select>
-					</div>
-					<ExpensesList
-						expenses={selectedMonth ? getFilteredExpenses(selectedMonth, expenses) : expenses}
-						onDeleteExpense={onDeleteExpense}
-						preferredCurrency={preferredCurrency}
-					/>
-					<div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									onClick={(_e) => selectedMonth && onGenerateReport(selectedMonth)}>
-									Generate Report
-									{!canGenerateReport(selectedMonth, expenses) && <CircleAlert className="text-amber-400" />}
-								</Button>
-							</TooltipTrigger>
-							{!canGenerateReport(selectedMonth, expenses) ? <TooltipContent>
-								<p>Select a month and make sure there are expenses</p>
-							</TooltipContent> : null}
-						</Tooltip>
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									onClick={(_e) => selectedMonth && onGenerateComparisonReport(selectedMonth, previousMonth)}
-								>
-									Compare with previous month
-									{!canGenerateComparisonReport(selectedMonth, expenses) && <CircleAlert className="text-amber-400" />}
-								</Button>
-							</TooltipTrigger>
-							{!canGenerateComparisonReport(selectedMonth, expenses) ? <TooltipContent>
-								<p>Make sure you have expenses for the selected month and the previous month</p>
-							</TooltipContent> : null}
-						</Tooltip>
-					</div>
-				</div>
-				<CreateExpenseForm onNewExpense={onNewExpense} />
-			</div>
-		</main>
-	);
+            <div className="container mx-auto px-4 py-8 max-w-7xl relative z-10">
+                {/* Hero Section */}
+                <HeroSection />
+
+                {/* Currency Selector and Mode Toggle */}
+                <div className="flex justify-end mb-6 gap-2">
+                    <CurrencySelector currency={currency} onCurrencyChange={setCurrency} />
+                    <ModeToggle />
+                </div>
+
+                {/* Main Content Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Left Column - Form */}
+                    <div className="lg:col-span-1">
+                        <ExpenseForm
+                            onAddExpense={handleAddExpense}
+                            editingExpense={editingExpense}
+                            onUpdateExpense={handleUpdateExpense}
+                            onCancelEdit={() => setEditingExpense(undefined)}
+                            currency={currency}
+                        />
+                    </div>
+
+                    {/* Right Column - Table and Insights */}
+                    <div className="lg:col-span-2 space-y-6">
+                        <ExpenseTable
+                            expenses={expenses}
+                            onDeleteExpense={handleDeleteExpense}
+                            onEditExpense={handleEditExpense}
+                            currency={currency}
+                        />
+
+                        <div className="grid md:grid-cols-2 gap-6">
+                            <MonthlyReport expenses={expenses} currency={currency} />
+                            <MonthComparison expenses={expenses} currency={currency} />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Footer */}
+                <div className="mt-12 text-center text-sm text-muted-foreground">
+                    <p>Your data is stored locally in your browser. No servers, no tracking. 🔒</p>
+                    <Separator className="mt-3 w-1/2 mx-auto" />
+                    <p>Built with ❤️ by
+                        <Button className='ps-1.5 py-0' variant={"link"} asChild>
+                            <a href="https://github.com/sohila-hashem" target="_blank">Sohila Hashem</a>
+                        </Button>
+                    </p>
+                </div>
+            </div>
+        </div>
+    );
 }
