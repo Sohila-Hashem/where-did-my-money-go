@@ -1,74 +1,138 @@
-import { endOfMonth, format, startOfMonth } from "date-fns";
-import type { Expense } from "./expense";
+import { endOfMonth, format, getDaysInMonth, startOfMonth } from "date-fns";
+import type { Expense, ExpenseCategories } from "./expense";
 import { formatCurrency } from "@/lib/utils";
+import { BALANCED_SPENDING_MESSAGE, HIGH_SPENDING_MESSAGE, HIGH_SPENDING_THRESHOLD, LOW_SPENDING_MESSAGE, LOW_SPENDING_THRESHOLD, MEDIUM_SPENDING_MESSAGE, MEDIUM_SPENDING_THRESHOLD } from "@/lib/constants";
 
-export function generateMonthlyReport(
-    expenses: Expense[],
-    month: string,
+export interface TopCategory {
+    category: ExpenseCategories;
+    amount: number;
+}
+
+export interface ReportInsights {
+    total: number;
+    categoryTotals: Record<ExpenseCategories, number>;
+    categoryPercentages: CategoryStats[];
+    topCategory: TopCategory;
+    dailyAvg: number;
+    totalTransactions: number;
+}
+
+export interface CategoryStats {
+    category: ExpenseCategories;
+    amount: number;
+    percentage: number;
+}
+
+export function generateMonthlyReport(expenses: Expense[], month: string, currencyCode: string) {
+    const monthDate = new Date(month + "-01");
+    const monthExpenses = getMonthExpenses(expenses, month);
+    const insights = generateReportInsightsData(monthExpenses, monthDate);
+    return generateReportInsights(insights, monthDate, currencyCode);
+}
+
+export const generateReportInsightsData = (expenses: Expense[], monthDate: Date): ReportInsights => {
+    const total = getMonthTotal(expenses);
+    const categoryTotals = getCategoriesTotal(expenses);
+    const topCategory = getTopCategory(categoryTotals);
+    const dailyAvg = total / getDaysInMonth(monthDate);
+    const totalTransactions = expenses.length;
+    const categoryPercentages = getCategoriesTotalPercentage(categoryTotals, total);
+
+    return {
+        total,
+        categoryTotals,
+        categoryPercentages,
+        topCategory,
+        dailyAvg,
+        totalTransactions,
+    };
+}
+
+export function generateReportInsights(
+    insights: ReportInsights,
+    monthDate: Date,
     currencyCode: string
 ): string {
-    const monthDate = new Date(month + "-01");
-    const monthStart = startOfMonth(monthDate);
-    const monthEnd = endOfMonth(monthDate);
 
-    const monthExpenses = expenses.filter((exp) => {
-        const expDate = new Date(exp.date);
-        return expDate >= monthStart && expDate <= monthEnd;
-    });
-
-    if (monthExpenses.length === 0) {
+    if (insights.total === 0) {
         return `You didn't record any expenses for ${format(monthDate, "MMMM yyyy")}. Either you're living like a hermit or you forgot to track! 🏝️`;
     }
 
-    const total = monthExpenses.reduce((sum, exp) => sum + exp.amount, 0);
-    const avgPerExpense = total / monthExpenses.length;
-
     // Category breakdown
-    const categoryTotals: Record<string, number> = {};
-    monthExpenses.forEach((exp) => {
-        categoryTotals[exp.category] = (categoryTotals[exp.category] || 0) + exp.amount;
-    });
+    const categoryTotals = insights.categoryTotals;
 
-    const topCategory = Object.entries(categoryTotals).sort(
-        ([, a], [, b]) => b - a
-    )[0];
+    const topCategory = insights.topCategory;
+    const topCategoryPercentage = insights.categoryPercentages.find((cat) => cat.category === topCategory.category)?.percentage || 0;
+    console.log(topCategoryPercentage);
 
-    const dailyAvg = total / new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0).getDate();
+    const dailyAvg = insights.dailyAvg;
 
     // Generate insights
     let report = `📊 **${format(monthDate, "MMMM yyyy")} Money Snapshot**\n\n`;
 
-    report += `You spent a total of **${formatCurrency(total, currencyCode)}** across ${monthExpenses.length} transactions. `;
+    report += `You spent a total of **${formatCurrency(insights.total, currencyCode)}** across ${insights.totalTransactions} transactions. `;
     report += `That's an average of ${formatCurrency(dailyAvg, currencyCode)} per day.\n\n`;
 
     report += `🎯 **Where It Went:**\n`;
-    report += `Your biggest spending category was **${topCategory[0]}** at ${formatCurrency(topCategory[1], currencyCode)} `;
-    report += `(${((topCategory[1] / total) * 100).toFixed(1)}% of your total). `;
-
-    if (topCategory[1] / total > 0.4) {
-        report += `Whoa! That's nearly half your budget. Might be worth keeping an eye on! 👀\n\n`;
-    } else if (topCategory[1] / total > 0.3) {
-        report += `That's a significant chunk, but nothing too wild. 🎯\n\n`;
+    report += `Your biggest spending category was **${topCategory.category}** at **${formatCurrency(topCategory.amount, currencyCode)}** `;
+    report += `(${topCategoryPercentage.toFixed(1)}% of your total). `;
+    if (topCategoryPercentage / 100 > HIGH_SPENDING_THRESHOLD) {
+        report += HIGH_SPENDING_MESSAGE;
+    } else if (topCategoryPercentage / 100 > MEDIUM_SPENDING_THRESHOLD) {
+        report += MEDIUM_SPENDING_MESSAGE;
+    } else if (topCategoryPercentage / 100 > LOW_SPENDING_THRESHOLD) {
+        report += LOW_SPENDING_MESSAGE;
     } else {
-        report += `Nice balance! You're spreading things out pretty well. ✨\n\n`;
-    }
-
-    report += `💸 **Transaction Vibes:**\n`;
-    if (avgPerExpense < 20) {
-        report += `Your average transaction was ${formatCurrency(avgPerExpense, currencyCode)}. Lots of small purchases! The death by a thousand paper cuts approach. ☕\n\n`;
-    } else if (avgPerExpense < 100) {
-        report += `Your average transaction was ${formatCurrency(avgPerExpense, currencyCode)}. A healthy mix of everyday spending. 🛒\n\n`;
-    } else {
-        report += `Your average transaction was ${formatCurrency(avgPerExpense, currencyCode)}. You like to go big! Making those meaningful purchases. 🎁\n\n`;
+        report += BALANCED_SPENDING_MESSAGE;
     }
 
     // Category breakdown
-    const sortedCategories = Object.entries(categoryTotals).sort(([, a], [, b]) => b - a);
+    const sortedCategories = getCategoriesTotalPercentage(categoryTotals, insights.total);
     report += `📈 **Category Breakdown:**\n`;
-    sortedCategories.forEach(([cat, amount]) => {
-        const percentage = ((amount / total) * 100).toFixed(1);
-        report += `• ${cat}: ${currencyCode}${amount.toFixed(2)} (${percentage}%)\n`;
+    sortedCategories.forEach(({ category, amount, percentage }) => {
+        report += `• ${category}: ${formatCurrency(amount, currencyCode)} (${percentage.toFixed(1)}%)\n`;
     });
 
     return report;
+}
+
+export const getCategoriesTotal = (expenses: Expense[]) => {
+    return expenses.reduce((acc, exp) => {
+        acc[exp.category] = (acc[exp.category] || 0) + exp.amount;
+        return acc;
+    }, {} as Record<ExpenseCategories, number>);
+}
+
+export const getMonthExpenses = (expenses: Expense[], month: string) => {
+    const monthDate = new Date(month + "-01");
+    const monthStart = startOfMonth(monthDate);
+    const monthEnd = endOfMonth(monthDate);
+
+    return expenses.filter((exp) => {
+        const expDate = new Date(exp.date);
+        return expDate >= monthStart && expDate <= monthEnd;
+    });
+}
+
+export const getMonthTotal = (expenses: Expense[]) => {
+    return expenses.reduce((acc, exp) => acc + exp.amount, 0);
+}
+
+export const getTopCategory = (categoriesTotal: Record<ExpenseCategories, number>): TopCategory => {
+    const entries = Object.entries(categoriesTotal);
+    if (entries.length === 0) {
+        return { category: "Other" as ExpenseCategories, amount: 0 };
+    }
+    const [category, amount] = entries.sort(([, a], [, b]) => b - a)[0];
+    return { category: category as ExpenseCategories, amount };
+}
+
+export const getCategoriesTotalPercentage = (categoriesTotal: Record<ExpenseCategories, number>, total: number): CategoryStats[] => {
+    return Object.entries(categoriesTotal).map(([category, amount]) => {
+        return {
+            category: category as ExpenseCategories,
+            amount,
+            percentage: (amount / total) * 100
+        };
+    });
 }
