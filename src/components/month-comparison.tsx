@@ -45,7 +45,7 @@ export function MonthComparison({ expenses, currency }: MonthComparisonProps) {
             const generatedComparison = generateMonthComparison(
                 expenses,
                 selectedMonth,
-                currency.symbol
+                currency.code
             );
             setComparison(generatedComparison);
             setIsGenerating(false);

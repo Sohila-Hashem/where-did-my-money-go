@@ -5,7 +5,7 @@ import { formatCurrency } from "@/lib/utils";
 export function generateMonthComparison(
     expenses: Expense[],
     currentMonth: string,
-    currencySymbol: string
+    currencyCode: string
 ): string {
     const currentDate = new Date(currentMonth + "-01");
     const currentStart = startOfMonth(currentDate);
@@ -40,9 +40,9 @@ export function generateMonthComparison(
     const percentChange = previousTotal > 0 ? ((difference / previousTotal) * 100) : 0;
 
     report += `💰 **The Numbers:**\n`;
-    report += `• This month: ${formatCurrency(currentTotal, currencySymbol)}\n`;
-    report += `• Last month: ${formatCurrency(previousTotal, currencySymbol)}\n`;
-    report += `• Difference: ${difference >= 0 ? "+" : ""}${formatCurrency(Math.abs(difference), currencySymbol)}\n\n`;
+    report += `• This month: ${formatCurrency(currentTotal, currencyCode)}\n`;
+    report += `• Last month: ${formatCurrency(previousTotal, currencyCode)}\n`;
+    report += `• Difference: ${difference >= 0 ? "+" : ""}${formatCurrency(Math.abs(difference), currencyCode)}\n\n`;
 
     report += `📊 **The Verdict:**\n`;
     if (Math.abs(percentChange) < 5) {

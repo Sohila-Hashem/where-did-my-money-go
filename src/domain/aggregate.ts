@@ -5,7 +5,7 @@ import { formatCurrency } from "@/lib/utils";
 export function generateMonthlyReport(
     expenses: Expense[],
     month: string,
-    currencySymbol: string
+    currencyCode: string
 ): string {
     const monthDate = new Date(month + "-01");
     const monthStart = startOfMonth(monthDate);
@@ -38,11 +38,11 @@ export function generateMonthlyReport(
     // Generate insights
     let report = `📊 **${format(monthDate, "MMMM yyyy")} Money Snapshot**\n\n`;
 
-    report += `You spent a total of **${formatCurrency(total, currencySymbol)}** across ${monthExpenses.length} transactions. `;
-    report += `That's an average of ${formatCurrency(dailyAvg, currencySymbol)} per day.\n\n`;
+    report += `You spent a total of **${formatCurrency(total, currencyCode)}** across ${monthExpenses.length} transactions. `;
+    report += `That's an average of ${formatCurrency(dailyAvg, currencyCode)} per day.\n\n`;
 
     report += `🎯 **Where It Went:**\n`;
-    report += `Your biggest spending category was **${topCategory[0]}** at ${formatCurrency(topCategory[1], currencySymbol)} `;
+    report += `Your biggest spending category was **${topCategory[0]}** at ${formatCurrency(topCategory[1], currencyCode)} `;
     report += `(${((topCategory[1] / total) * 100).toFixed(1)}% of your total). `;
 
     if (topCategory[1] / total > 0.4) {
@@ -55,11 +55,11 @@ export function generateMonthlyReport(
 
     report += `💸 **Transaction Vibes:**\n`;
     if (avgPerExpense < 20) {
-        report += `Your average transaction was ${formatCurrency(avgPerExpense, currencySymbol)}. Lots of small purchases! The death by a thousand paper cuts approach. ☕\n\n`;
+        report += `Your average transaction was ${formatCurrency(avgPerExpense, currencyCode)}. Lots of small purchases! The death by a thousand paper cuts approach. ☕\n\n`;
     } else if (avgPerExpense < 100) {
-        report += `Your average transaction was ${formatCurrency(avgPerExpense, currencySymbol)}. A healthy mix of everyday spending. 🛒\n\n`;
+        report += `Your average transaction was ${formatCurrency(avgPerExpense, currencyCode)}. A healthy mix of everyday spending. 🛒\n\n`;
     } else {
-        report += `Your average transaction was ${formatCurrency(avgPerExpense, currencySymbol)}. You like to go big! Making those meaningful purchases. 🎁\n\n`;
+        report += `Your average transaction was ${formatCurrency(avgPerExpense, currencyCode)}. You like to go big! Making those meaningful purchases. 🎁\n\n`;
     }
 
     // Category breakdown
@@ -67,7 +67,7 @@ export function generateMonthlyReport(
     report += `📈 **Category Breakdown:**\n`;
     sortedCategories.forEach(([cat, amount]) => {
         const percentage = ((amount / total) * 100).toFixed(1);
-        report += `• ${cat}: ${currencySymbol}${amount.toFixed(2)} (${percentage}%)\n`;
+        report += `• ${cat}: ${currencyCode}${amount.toFixed(2)} (${percentage}%)\n`;
     });
 
     return report;

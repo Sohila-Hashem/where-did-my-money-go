@@ -145,7 +145,7 @@ function RouteComponent() {
                     <p>Your data is stored locally in your browser. No servers, no tracking. 🔒</p>
                     <Separator className="mt-3 w-1/2 mx-auto" />
                     <p>Built with ❤️ by
-                        <Button className='ps-1.5 py-0' variant={"link"} asChild>
+                        <Button className='px-1 py-0' variant={"link"} asChild>
                             <a href="https://github.com/sohila-hashem" target="_blank">Sohila Hashem</a>
                         </Button>
                     </p>

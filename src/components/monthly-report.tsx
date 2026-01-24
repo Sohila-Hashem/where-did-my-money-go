@@ -45,7 +45,7 @@ export function MonthlyReport({ expenses, currency }: MonthlyReportProps) {
             const generatedReport = generateMonthlyReport(
                 expenses,
                 selectedMonth,
-                currency.symbol
+                currency.code
             );
             setReport(generatedReport);
             setIsGenerating(false);
