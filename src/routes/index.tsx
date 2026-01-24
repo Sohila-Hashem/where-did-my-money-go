@@ -141,9 +141,9 @@ function RouteComponent() {
                 </div>
 
                 {/* Footer */}
-                <div className="mt-12 text-center text-sm text-muted-foreground">
+                <div className="mt-12 text-center text-sm text-muted-foreground max-w-xl mx-auto">
                     <p>Your data is stored locally in your browser. No servers, no tracking. 🔒</p>
-                    <Separator className="mt-3 w-1/2 mx-auto" />
+                    <Separator decorative className="mt-3 w-1/2 mx-auto" />
                     <p>Built with ❤️ by
                         <Button className='px-1 py-0' variant={"link"} asChild>
                             <a href="https://github.com/sohila-hashem" target="_blank">Sohila Hashem</a>
