@@ -54,6 +54,8 @@ export function MonthlyReport({ expenses, currency }: MonthlyReportProps) {
 
     return (
         <motion.div
+            role="region"
+            aria-label="Monthly Report"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5, delay: 0.2 }}
@@ -76,12 +78,12 @@ export function MonthlyReport({ expenses, currency }: MonthlyReportProps) {
                             >
                                 <FileText className="h-5 w-5 text-primary" />
                             </motion.div>
-                            <h3>Monthly Report</h3>
+                            <h2 className="text-lg font-semibold">Monthly Report</h2>
                         </motion.div>
 
                         <div className="flex flex-col sm:flex-row gap-3">
                             <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                                <SelectTrigger className="flex-1">
+                                <SelectTrigger className="flex-1" aria-label="Select a month">
                                     <SelectValue placeholder="Select a month" />
                                 </SelectTrigger>
                                 <SelectContent>

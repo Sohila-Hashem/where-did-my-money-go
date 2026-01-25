@@ -37,7 +37,8 @@ test.describe('Expense App', () => {
         await page.getByRole('option', { name: 'Food' }).click();
 
         // Pick Date
-        await page.getByRole('button', { name: /Pick a date/i }).click();
+        // The accessible name is now "Date" because of the Label-Input association
+        await page.getByLabel('Date').click();
         // Click todays date in the calendar
         const today = new Date().getDate().toString();
         // Wait for calendar to be visible
