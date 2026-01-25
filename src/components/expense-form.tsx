@@ -112,7 +112,7 @@ export function ExpenseForm({
 				transition={{ type: "spring", stiffness: 300 }}
 			>
 				<Card className="p-6">
-					<form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+					<form role="form" aria-label="Add Expense" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
 						<div className="space-y-2">
 							<Label htmlFor="description">Description</Label>
 							<Controller
@@ -158,7 +158,7 @@ export function ExpenseForm({
 						</div>
 
 						<div className="space-y-2">
-							<Label>Date</Label>
+							<Label htmlFor="date">Date</Label>
 							<Controller
 								control={control}
 								name="date"
@@ -166,6 +166,7 @@ export function ExpenseForm({
 									<Popover>
 										<PopoverTrigger asChild>
 											<Button
+												id="date"
 												variant="outline"
 												className="w-full bg-input-background justify-start text-left font-normal"
 											>
@@ -182,7 +183,6 @@ export function ExpenseForm({
 												mode="single"
 												selected={field.value ?? ""}
 												onSelect={field.onChange}
-												autoFocus
 											/>
 										</PopoverContent>
 									</Popover>
@@ -202,8 +202,8 @@ export function ExpenseForm({
 								name="category"
 								render={({ field }) => (
 									<Select value={field.value ?? ""} onValueChange={field.onChange}>
-										<SelectTrigger>
-											<SelectValue placeholder="Select category" />
+										<SelectTrigger id="category">
+											<SelectValue aria-label="Select category" placeholder="Select category" />
 										</SelectTrigger>
 										<SelectContent>
 											{CATEGORIES.map((cat) => (
