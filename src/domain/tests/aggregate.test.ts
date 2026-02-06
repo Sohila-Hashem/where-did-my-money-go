@@ -110,7 +110,7 @@ describe("Aggregate Helper Functions", () => {
         expect(top).toEqual({ category: "Wearables", amount: 150 });
     });
 
-    it("getCategoriesTotalPercentage calculates percentages correctly", () => {
+    it("getCategoriesTotalPercentage calculates percentages correctly and sorts by percentage descending", () => {
         const totals = {
             Food: 80,
             Wearables: 150,
@@ -142,6 +142,7 @@ describe("Aggregate Helper Functions", () => {
         const total = 250;
         const result = getCategoriesTotalPercentage(totals, total);
 
+        // Check calculations
         const food = result.find(c => c.category === "Food");
         const Wearables = result.find(c => c.category === "Wearables");
         const transport = result.find(c => c.category === "Transport");
@@ -149,6 +150,17 @@ describe("Aggregate Helper Functions", () => {
         expect(food?.percentage).toBe((80 / 250) * 100);
         expect(Wearables?.percentage).toBe((150 / 250) * 100);
         expect(transport?.percentage).toBe((20 / 250) * 100);
+
+        // Check sorting (Descending)
+        // Expected: Wearables (60%), Food (32%), Transport (8%), others 0
+        expect(result[0].category).toBe("Wearables");
+        expect(result[1].category).toBe("Food");
+        expect(result[2].category).toBe("Transport");
+
+        // Ensure strictly descending
+        for (let i = 0; i < result.length - 1; i++) {
+            expect(result[i].percentage).toBeGreaterThanOrEqual(result[i + 1].percentage);
+        }
     });
 });
 
