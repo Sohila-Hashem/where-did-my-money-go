@@ -129,9 +129,9 @@ export function MonthlyReport({ expenses, currency }: MonthlyReportProps) {
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.5 }}
                             >
-                                <div className="whitespace-pre-wrap text-sm leading-relaxed">
+                                <p className="whitespace-pre-wrap text-sm leading-relaxed">
                                     {report}
-                                </div>
+                                </p>
                             </motion.div>
                         )}
 
