@@ -1,3 +1,5 @@
+import { format } from "date-fns";
+
 export const CATEGORIES = [
     { category: 'Food' },
     { category: 'Transport' },
@@ -27,6 +29,8 @@ export const CATEGORIES = [
     { category: 'Other' },
 ] as const
 
+export const CATEGORIES_SORTED = [...CATEGORIES].sort((a, b) => a.category.localeCompare(b.category));
+
 export type ExpenseCategories = (typeof CATEGORIES)[number]['category'];
 
 export interface Expense {
@@ -35,4 +39,21 @@ export interface Expense {
     date: string;
     category: ExpenseCategories;
     description: string;
+}
+
+export const getTotalAmount = (expenses: Expense[]) => {
+    return expenses.reduce((sum, expense) => sum + expense.amount, 0);
+}
+
+export const filterExpensesByMonth = (expenses: Expense[], month: string) => {
+    const monthKey = format(new Date(month), 'yyyy-MM');
+    return expenses.filter((expense) => format(new Date(expense.date), 'yyyy-MM') === monthKey);
+}
+
+export const getAvailableMonths = (expenses: Expense[]) => {
+    const months = new Set<string>();
+    expenses.forEach((expense) => {
+        months.add(format(new Date(expense.date), 'yyyy-MM'));
+    });
+    return Array.from(months).sort().reverse();
 }

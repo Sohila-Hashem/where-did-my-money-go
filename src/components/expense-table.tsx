@@ -31,7 +31,7 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { type Currency } from "@/lib/constants";
-import { type Expense } from "@/domain/expense";
+import { filterExpensesByMonth, getAvailableMonths, getTotalAmount, type Expense } from "@/domain/expense";
 import { formatCurrency } from "@/lib/utils";
 
 interface ExpenseTableProps {
@@ -50,28 +50,15 @@ export function ExpenseTable({
     const [selectedMonth, setSelectedMonth] = useState<string>("all");
     const [deleteId, setDeleteId] = useState<string | null>(null);
 
-    // Get unique months from expenses
     const availableMonths = useMemo(() => {
-        const months = new Set<string>();
-        expenses.forEach((expense) => {
-            const date = new Date(expense.date);
-            const monthKey = format(date, "yyyy-MM");
-            months.add(monthKey);
-        });
-        return Array.from(months).sort().reverse();
+        return getAvailableMonths(expenses);
     }, [expenses]);
 
-    // Filter expenses by selected month
     const filteredExpenses = useMemo(() => {
         if (selectedMonth === "all") return expenses;
-        return expenses.filter((expense) => {
-            const date = new Date(expense.date);
-            const monthKey = format(date, "yyyy-MM");
-            return monthKey === selectedMonth;
-        });
+        return filterExpensesByMonth(expenses, selectedMonth);
     }, [expenses, selectedMonth]);
 
-    // Sort by date (newest first)
     const sortedExpenses = useMemo(() => {
         return [...filteredExpenses].sort((a, b) => {
             return new Date(b.date).getTime() - new Date(a.date).getTime();
@@ -79,7 +66,7 @@ export function ExpenseTable({
     }, [filteredExpenses]);
 
     const totalAmount = useMemo(() => {
-        return filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+        return getTotalAmount(filteredExpenses);
     }, [filteredExpenses]);
 
     return (

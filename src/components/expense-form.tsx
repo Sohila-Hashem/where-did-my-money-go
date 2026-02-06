@@ -1,7 +1,7 @@
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { format } from "date-fns";
+import { format, formatISO } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { motion } from "motion/react";
 import { Card } from "@/components/ui/card";
@@ -21,7 +21,7 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { CATEGORIES, type Expense } from "@/domain/expense";
+import { CATEGORIES_SORTED, type Expense } from "@/domain/expense";
 import { type Currency } from "@/lib/constants";
 import { expenseSchema, type ExpenseFormData } from "@/schemas/expense-schema";
 import { cn } from "@/lib/utils";
@@ -35,11 +35,11 @@ interface ExpenseFormProps {
 }
 
 export function ExpenseForm({
-	onAddExpense,
 	editingExpense,
+	currency,
+	onAddExpense,
 	onUpdateExpense,
 	onCancelEdit,
-	currency,
 }: ExpenseFormProps) {
 	const {
 		control,
@@ -56,30 +56,29 @@ export function ExpenseForm({
 		},
 	});
 
-	// Reset form when editing expense changes
-	useEffect(() => {
-		if (editingExpense) {
-			reset({
-				description: editingExpense.description,
-				amount: editingExpense.amount,
-				date: new Date(editingExpense.date),
-				category: editingExpense.category,
-			});
-		} else {
-			reset({
-				description: undefined,
-				amount: undefined,
-				date: undefined,
-				category: undefined,
-			});
-		}
-	}, [editingExpense, reset]);
+	const resetForm = useCallback(() => {
+		reset({
+			description: undefined,
+			amount: undefined,
+			date: undefined,
+			category: undefined,
+		});
+	}, [reset]);
+
+	const setEditingExpense = useCallback((expense: Expense) => {
+		reset({
+			description: expense.description,
+			amount: expense.amount,
+			date: new Date(expense.date),
+			category: expense.category,
+		});
+	}, [reset]);
 
 	const onSubmit = (data: ExpenseFormData) => {
 		const expenseData = {
 			description: data.description,
 			amount: data.amount,
-			date: format(data.date, "yyyy-MM-dd"),
+			date: formatISO(data.date),
 			category: data.category,
 		};
 
@@ -92,14 +91,16 @@ export function ExpenseForm({
 			onAddExpense(expenseData);
 		}
 
-		// Reset form
-		reset({
-			description: undefined,
-			amount: undefined,
-			date: undefined,
-			category: undefined,
-		});
+		resetForm();
 	};
+
+	useEffect(() => {
+		if (editingExpense) {
+			setEditingExpense(editingExpense);
+			return
+		}
+		resetForm();
+	}, [editingExpense, resetForm, setEditingExpense]);
 
 	return (
 		<motion.div
@@ -206,7 +207,7 @@ export function ExpenseForm({
 											<SelectValue aria-label="Select category" placeholder="Select category" />
 										</SelectTrigger>
 										<SelectContent>
-											{CATEGORIES.map((cat) => (
+											{CATEGORIES_SORTED.map((cat) => (
 												<SelectItem key={cat.category} value={cat.category}>
 													{cat.category}
 												</SelectItem>
