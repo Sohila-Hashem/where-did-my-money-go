@@ -54,6 +54,8 @@ export function MonthComparison({ expenses, currency }: MonthComparisonProps) {
 
     return (
         <motion.div
+            role="region"
+            aria-label="Monthly Comparison"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5, delay: 0.3 }}
@@ -76,7 +78,7 @@ export function MonthComparison({ expenses, currency }: MonthComparisonProps) {
                             >
                                 <ArrowLeftRight className="h-5 w-5 text-accent" />
                             </motion.div>
-                            <h3>Compare Months</h3>
+                            <h2 className="text-xl font-semibold">Compare Months</h2>
                         </motion.div>
 
                         <p className="text-sm text-muted-foreground">
@@ -138,9 +140,9 @@ export function MonthComparison({ expenses, currency }: MonthComparisonProps) {
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.5 }}
                             >
-                                <div className="whitespace-pre-wrap text-sm leading-relaxed">
+                                <p aria-label="Comparison Report" className="whitespace-pre-wrap text-sm leading-relaxed">
                                     {comparison}
-                                </div>
+                                </p>
                             </motion.div>
                         )}
 
