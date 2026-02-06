@@ -87,7 +87,7 @@ export function MonthComparison({ expenses, currency }: MonthComparisonProps) {
 
                         <div className="flex flex-col sm:flex-row gap-3">
                             <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                                <SelectTrigger className="flex-1">
+                                <SelectTrigger className="flex-1" aria-label="Select a month">
                                     <SelectValue placeholder="Select a month" />
                                 </SelectTrigger>
                                 <SelectContent>
