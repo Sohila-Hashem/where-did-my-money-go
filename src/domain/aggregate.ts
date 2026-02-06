@@ -134,5 +134,5 @@ export const getCategoriesTotalPercentage = (categoriesTotal: Record<ExpenseCate
             amount,
             percentage: (amount / total) * 100
         };
-    });
+    }).sort((a, b) => b.percentage - a.percentage);
 }
