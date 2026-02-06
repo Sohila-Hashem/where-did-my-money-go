@@ -1,4 +1,4 @@
-import { endOfMonth, format, getDaysInMonth, startOfMonth } from "date-fns";
+import { endOfMonth, format, getDaysInMonth, isWithinInterval, startOfMonth } from "date-fns";
 import type { Expense, ExpenseCategories } from "./expense";
 import { formatCurrency } from "@/lib/utils";
 import { BALANCED_SPENDING_MESSAGE, HIGH_SPENDING_MESSAGE, HIGH_SPENDING_THRESHOLD, LOW_SPENDING_MESSAGE, LOW_SPENDING_THRESHOLD, MEDIUM_SPENDING_MESSAGE, MEDIUM_SPENDING_THRESHOLD } from "@/lib/constants";
@@ -110,7 +110,7 @@ export const getMonthExpenses = (expenses: Expense[], month: string) => {
 
     return expenses.filter((exp) => {
         const expDate = new Date(exp.date);
-        return expDate >= monthStart && expDate <= monthEnd;
+        return isWithinInterval(expDate, { start: monthStart, end: monthEnd });
     });
 }
 
