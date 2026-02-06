@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import { LoadingSpinner } from "@/components/loading-spinner";
 import { type Currency } from "@/lib/constants";
-import { type Expense } from "@/domain/expense";
+import { type Expense, getAvailableMonths } from "@/domain/expense";
 import { generateMonthlyReport } from "@/domain/aggregate";
 
 interface MonthlyReportProps {
@@ -27,13 +27,7 @@ export function MonthlyReport({ expenses, currency }: MonthlyReportProps) {
     const [isGenerating, setIsGenerating] = useState(false);
 
     const availableMonths = useMemo(() => {
-        const months = new Set<string>();
-        expenses.forEach((expense) => {
-            const date = new Date(expense.date);
-            const monthKey = format(date, "yyyy-MM");
-            months.add(monthKey);
-        });
-        return Array.from(months).sort().reverse();
+        return getAvailableMonths(expenses);
     }, [expenses]);
 
     const handleGenerateReport = () => {
