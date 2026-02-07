@@ -1,6 +1,77 @@
 
-import { test, expect } from '@playwright/test';
+import { CATEGORIES } from '@/domain/expense';
+import { test, expect, type Page } from '@playwright/test';
 import { format, subMonths } from 'date-fns';
+
+const currentMonth = new Date('2026-02-01');
+const previousMonth = subMonths(currentMonth, 1);
+const currentMonthLabel = format(currentMonth, 'MMMM yyyy');
+const previousMonthLabel = format(previousMonth, 'MMMM yyyy');
+
+const PREVIOUS_MONTH_SELECTED_DAY = '15';
+const ADD_EXPENSE_BUTTON_TEXT = 'Add Expense';
+const DESCRIPTION_INPUT_LABEL = 'Description';
+const AMOUNT_INPUT_LABEL = 'Amount';
+const CATEGORY_INPUT_LABEL = 'Category';
+const DATE_INPUT_LABEL = 'Date';
+const MONTHLY_COMPARISON_CARD_LABEL = 'Monthly Comparison';
+const MONTHLY_COMPARISON_COMPARE_BUTTON_TEXT = 'Compare';
+const MONTHLY_COMPARISON_REPORT_LABEL = 'Comparison Report';
+const MONTHLY_COMPARISON_LOADING_TEXT = 'Crunching the numbers...';
+const GO_TO_PREVIOUS_MONTH_BUTTON_LABEL = 'Go to the Previous Month';
+const NO_EXPENSES_YET_TEXT = 'No expenses found. Start by adding your first expense!';
+const NO_EXPENSES_YET_OPTION_TEXT = 'No expenses yet';
+const CURRENCY_SELECTOR_LABEL = 'Currency';
+const USD_OPTION_TEXT = 'US Dollar';
+const USD_SYMBOL = '$';
+
+// Helper to add expense
+const addExpense = async (page: Page, desc: string, amount: string, isPreviousMonth: boolean) => {
+    // Fill Description
+    await page.getByLabel(DESCRIPTION_INPUT_LABEL).fill(desc);
+    // Fill Amount
+    await page.getByLabel(AMOUNT_INPUT_LABEL).fill(amount);
+
+    // Select Category
+    await page.getByRole('combobox', { name: CATEGORY_INPUT_LABEL }).click();
+    await page.getByRole('option', { name: CATEGORIES[0].category }).click();
+
+    // Select Date
+    await selectDate(page, PREVIOUS_MONTH_SELECTED_DAY, isPreviousMonth);
+
+    // Submit
+    await page.getByRole('button', { name: ADD_EXPENSE_BUTTON_TEXT }).click();
+
+    // Verify and simple wait for toast/modal or list update
+    await expect(page.getByText(desc)).toBeVisible();
+};
+
+const selectDate = async (page: Page, day: string, goToPreviousMonth = false) => {
+    await page.getByLabel(DATE_INPUT_LABEL).click();
+
+    if (goToPreviousMonth) {
+        await page.getByLabel(GO_TO_PREVIOUS_MONTH_BUTTON_LABEL).click();
+        await expect(page.getByText(previousMonthLabel)).toBeVisible();
+    }
+
+    const calendar = page.getByRole('grid');
+    await expect(calendar).toBeVisible();
+    await calendar.getByText(day, { exact: true }).click();
+};
+
+const runComparison = async (page: Page, monthLabel: string) => {
+    const compareCard = page.getByRole('region', { name: MONTHLY_COMPARISON_CARD_LABEL });
+    await compareCard.getByRole('combobox').click();
+    await page.getByRole('option', { name: monthLabel }).click();
+    await compareCard.getByRole('button', { name: MONTHLY_COMPARISON_COMPARE_BUTTON_TEXT }).click();
+
+    // Wait for loading to start and finish
+    await expect(compareCard.getByText(MONTHLY_COMPARISON_LOADING_TEXT)).toBeHidden({ timeout: 10000 });
+
+    const reportArea = compareCard.getByLabel(MONTHLY_COMPARISON_REPORT_LABEL);
+    await expect(reportArea).toBeVisible({ timeout: 10000 });
+    return reportArea;
+};
 
 test.describe('Monthly Comparison Report', () => {
     test.beforeEach(async ({ page }) => {
@@ -10,82 +81,29 @@ test.describe('Monthly Comparison Report', () => {
         await page.evaluate(() => localStorage.clear());
         await page.reload();
 
+        // ensure there are no expenses after clearing local storage
+        await expect(page.getByText(NO_EXPENSES_YET_TEXT)).toBeVisible();
+
         // Ensure we are using USD for tests (some tests check for '$')
-        await page.getByRole('combobox').first().click();
-        await page.getByRole('option', { name: 'US Dollar' }).click();
+        await page.getByRole('combobox', { name: CURRENCY_SELECTOR_LABEL }).click();
+        await page.getByRole('option', { name: USD_OPTION_TEXT }).click();
     });
 
     test('should generate a comparison report for two consecutive months', async ({ page }) => {
-        // 1. Seed data
-        const currentMonth = new Date();
-        const previousMonth = subMonths(currentMonth, 1);
-        const currentMonthLabel = format(currentMonth, 'MMMM yyyy');
-        const previousMonthLabel = format(previousMonth, 'MMMM yyyy');
-
-        // Helper to add expense
-        const addExpense = async (desc: string, amount: string, isPreviousMonth: boolean) => {
-            // Fill Description
-            await page.getByLabel('Description').fill(desc);
-            // Fill Amount
-            await page.getByLabel('Amount').fill(amount);
-
-            // Select Category
-            await page.getByRole('combobox', { name: 'Category' }).click();
-            await page.getByRole('option', { name: 'Food' }).click(); // Assuming 'Food' exists
-
-            // Select Date
-            await page.getByLabel('Date').click();
-            if (isPreviousMonth) {
-                const prevMonthButton = page.getByLabel('Go to the Previous Month'); // aria-label from the Shadcn Calendar component
-                await prevMonthButton.click();
-                // Wait for the calendar to update to the previous month
-                await expect(page.getByText(previousMonthLabel)).toBeVisible();
-            }
-            // Pick a day (e.g., 15th)
-            const calendar = page.getByRole('grid');
-            await expect(calendar).toBeVisible();
-            await calendar.getByText('15', { exact: true }).click();
-
-            // Submit
-            await page.getByRole('button', { name: 'Add Expense' }).click();
-
-            // Verify and simple wait for toast/modal or list update
-            await expect(page.getByText(desc)).toBeVisible();
-        };
-
         // Add expense for current month ($150)
-        await addExpense('Current Month Expense', '150', false);
+        await addExpense(page, 'Current Month Expense', '150', false);
 
         // Add expense for previous month ($100)
-        await addExpense('Previous Month Expense', '100', true);
+        await addExpense(page, 'Previous Month Expense', '100', true);
 
-        // 2. Interact with Comparison Component
-        const compareCard = page.getByRole('region', { name: "Monthly Comparison" });
-
-        // Select the current month
-        const selectTrigger = compareCard.getByRole('combobox');
-        await selectTrigger.click();
-
-        // Select the option for the current month
-        await page.getByRole('option', { name: currentMonthLabel }).click();
-
-        // Click Compare button
-        await compareCard.getByRole('button', { name: 'Compare' }).click();
-
-        // 3. Verify Report Content
-        // Wait for loading to start and finish
-        await expect(compareCard.getByText('Crunching the numbers...')).toBeHidden({ timeout: 10000 });
-
-        // Use getByLabel for better accessibility matching
-        const reportArea = compareCard.getByLabel('Comparison Report');
-        await expect(reportArea).toBeVisible();
-
+        // Interact with Comparison Component
+        const reportArea = await runComparison(page, currentMonthLabel);
         const reportText = await reportArea.innerText();
 
         expect(reportText).toContain('Month Comparison');
-        expect(reportText).toContain('This month: $150');
-        expect(reportText).toContain('Last month: $100');
-        expect(reportText).toContain('Difference: +$50');
+        expect(reportText).toContain(`This month: ${USD_SYMBOL}150`);
+        expect(reportText).toContain(`Last month: ${USD_SYMBOL}100`);
+        expect(reportText).toContain(`Difference: +${USD_SYMBOL}50`);
         expect(reportText).toContain('You spent 50.0% MORE than last month');
         expect(reportText).toContain('Whoa there, big spender!');
     });
@@ -95,45 +113,33 @@ test.describe('Monthly Comparison Report', () => {
         const currentMonthLabel = format(currentMonth, 'MMMM yyyy');
 
         // Add expense ONLY for current month
-        await page.getByPlaceholder('Coffee at local cafe').fill('Only Current Expense');
-        await page.getByPlaceholder('0.00').fill('200');
-        await page.getByRole('combobox', { name: 'Category' }).click();
+        await page.getByLabel(DESCRIPTION_INPUT_LABEL).fill('Only Current Expense');
+        await page.getByLabel(AMOUNT_INPUT_LABEL).fill('200');
+        await page.getByRole('combobox', { name: CATEGORY_INPUT_LABEL }).click();
         await page.getByRole('option', { name: 'Food' }).click(); // Assuming 'Food' exists
 
-        await page.getByLabel('Date').click();
+        await page.getByLabel(DATE_INPUT_LABEL).click();
         const calendar = page.getByRole('grid');
         await expect(calendar).toBeVisible();
         await calendar.getByText('15', { exact: true }).click();
 
-        await page.getByRole('button', { name: 'Add Expense' }).click();
+        await page.getByRole('button', { name: ADD_EXPENSE_BUTTON_TEXT }).click();
         await expect(page.getByText('Only Current Expense')).toBeVisible();
 
         // Interact with Comparison Component
-        const compareCard = page.locator('.space-y-4', { has: page.getByRole('heading', { name: 'Compare Months' }) });
-
-        const selectTrigger = compareCard.getByRole('combobox');
-        await selectTrigger.click();
-        await page.getByRole('option', { name: currentMonthLabel }).click();
-
-        await compareCard.getByRole('button', { name: 'Compare' }).click();
-
-        // Verify Report
-        await expect(compareCard.getByText('Crunching the numbers...')).toBeHidden({ timeout: 10000 });
-
-        const reportArea = compareCard.getByLabel('Comparison Report');
-        await expect(reportArea).toBeVisible();
+        const reportArea = await runComparison(page, currentMonthLabel);
         const reportText = await reportArea.innerText();
 
-        expect(reportText).toContain('This month: $200');
-        expect(reportText).toContain('Last month: $0');
-        expect(reportText).toContain('Difference: +$200');
+        expect(reportText).toContain(`This month: ${USD_SYMBOL}200`);
+        expect(reportText).toContain(`Last month: ${USD_SYMBOL}0`);
+        expect(reportText).toContain(`Difference: +${USD_SYMBOL}200`);
         expect(reportText).toContain('Pretty much the same as last month!');
     });
 
     test('should handle empty state with no expenses at all', async ({ page }) => {
         // 1. Locate the card securely
         // We look for a container that has the heading "Compare Months"
-        const compareCard = page.getByRole('region', { name: "Monthly Comparison" });
+        const compareCard = page.getByRole('region', { name: MONTHLY_COMPARISON_CARD_LABEL });
 
         // Ensure card is visible first (handling animation)
         await expect(compareCard).toBeVisible();
@@ -144,7 +150,7 @@ test.describe('Monthly Comparison Report', () => {
         await selectTrigger.click();
 
         // Should see "No expenses yet" disabled item
-        const noExpensesItem = page.getByRole('option', { name: 'No expenses yet' });
+        const noExpensesItem = page.getByRole('option', { name: NO_EXPENSES_YET_OPTION_TEXT });
         await expect(noExpensesItem).toBeVisible();
         await expect(noExpensesItem).toBeDisabled();
 
@@ -152,7 +158,7 @@ test.describe('Monthly Comparison Report', () => {
         await page.keyboard.press('Escape');
 
         // 4. Ensure "Compare" button is disabled
-        const compareButton = compareCard.getByRole('button', { name: 'Compare' });
+        const compareButton = compareCard.getByRole('button', { name: MONTHLY_COMPARISON_COMPARE_BUTTON_TEXT });
         await expect(compareButton).toBeVisible();
         await expect(compareButton).toBeDisabled();
     });
