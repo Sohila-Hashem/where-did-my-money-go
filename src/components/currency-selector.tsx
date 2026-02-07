@@ -39,12 +39,12 @@ export function CurrencySelector({
                     if (selected) onCurrencyChange(selected);
                 }}
             >
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-[180px]" aria-label="Currency">
                     <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                     {CURRENCIES.map((curr) => (
-                        <SelectItem key={curr.code} value={curr.code}>
+                        <SelectItem key={curr.code} value={curr.code} aria-label={curr.name}>
                             {curr.symbol} {curr.code} - {curr.name}
                         </SelectItem>
                     ))}
