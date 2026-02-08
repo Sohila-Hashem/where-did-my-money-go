@@ -1,3 +1,4 @@
+import { sentryVitePlugin } from "@sentry/vite-plugin";
 /// <reference types="vitest" />
 import { defineConfig } from 'vite'
 import { devtools } from '@tanstack/devtools-vite'
@@ -9,20 +10,20 @@ import { fileURLToPath, URL } from 'node:url'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [
-    devtools(),
-    tanstackRouter({
-      target: 'react',
-      autoCodeSplitting: true,
-    }),
-    viteReact(),
-    tailwindcss(),
-  ],
+  plugins: [devtools(), tanstackRouter({
+    target: 'react',
+    autoCodeSplitting: true,
+  }), viteReact(), tailwindcss(), sentryVitePlugin({
+    org: import.meta.env.SENTRY_ORG,
+    project: import.meta.env.SENTRY_PROJECT
+  })],
+
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+
   test: {
     globals: true,
     environment: 'jsdom',
@@ -40,6 +41,7 @@ export default defineConfig({
       exclude: [
         "node_modules/**",
         "dist/**",
+        "docs/**",
         "coverage/**",
         "src/main.tsx",
         "src/components/ui/**",
@@ -54,4 +56,8 @@ export default defineConfig({
       ]
     },
   },
+
+  build: {
+    sourcemap: true
+  }
 })
