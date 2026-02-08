@@ -15,6 +15,8 @@ A minimalistic expense tracker and analyzer that turns your spending into clear 
 ## Demo
 
 **Live website:** https://where-did-my-money-go.vercel.app/
+![working demo](https://github.com/user-attachments/assets/e39e3cbd-1ca9-4c23-bf5d-9a478d2eeb2d)
+
 
 ## Problem
 
