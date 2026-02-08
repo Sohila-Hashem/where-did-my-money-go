@@ -10,8 +10,8 @@ jobs:
     build:
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v4
-            - uses: actions/setup-node@v4
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+            - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238
               with:
                   node-version: 20
                   cache: "npm"
@@ -23,21 +23,27 @@ jobs:
     test:
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v4
-            - uses: actions/setup-node@v4
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+            - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238
               with:
                   node-version: 20
                   cache: "npm"
             - name: Install dependencies
               run: npm ci
-            - name: Run Unit & Integration Tests
-              run: npm run test
+            - name: Run Unit & Integration Tests with Coverage
+              run: npm run test:coverage
+            - name: Upload coverage to Codecov
+              uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de
+              with:
+                  token: ${{ secrets.CODECOV_TOKEN }}
+                  files: ./coverage/coverage.json
+                  fail_ci_if_error: true
 
     e2e:
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v4
-            - uses: actions/setup-node@v4
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+            - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238
               with:
                   node-version: 20
                   cache: "npm"
@@ -47,7 +53,7 @@ jobs:
               run: npx playwright install --with-deps
             - name: Run E2E Tests
               run: npm run test:e2e
-            - uses: actions/upload-artifact@v4
+            - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
               if: always()
               with:
                   name: playwright-report
@@ -57,8 +63,8 @@ jobs:
     audit:
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v4
-            - uses: actions/setup-node@v4
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+            - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238
               with:
                   node-version: 20
                   cache: "npm"

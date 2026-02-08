@@ -28,5 +28,30 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: './vitest.setup.ts',
     exclude: ['node_modules', 'e2e/**'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      thresholds: {
+        lines: 80,
+        functions: 80,
+        branches: 70,
+        statements: 80,
+      },
+      exclude: [
+        "node_modules/**",
+        "dist/**",
+        "coverage/**",
+        "src/main.tsx",
+        "src/components/ui/**",
+        "src/components/theme-provider.tsx",
+        "src/reportWebVitals.ts",
+        "src/routeTree.gen.ts",
+        "src/**/__root.tsx",
+        "src/lib/constants.ts",
+        "src/schemas/expense-schema.ts",
+        "vite.config.ts",
+        "playwright.config.ts"
+      ]
+    },
   },
 })
