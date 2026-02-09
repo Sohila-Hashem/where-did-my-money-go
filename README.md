@@ -10,7 +10,7 @@
 ![Playwright](https://img.shields.io/badge/Playwright-2EAD33?logo=playwright&logoColor=white&style=flat-square)
 ![TailwindCSS](https://img.shields.io/badge/TailwindCSS-06B6D4?logo=tailwindcss&logoColor=white&style=flat-square)
 
-A minimalistic expense tracker and analyzer that turns your spending into clear monthly and month-to-month insights, so you can finally answer:
+A minimalistic expense tracker and analyzer that turns your spending into clear monthly and month-to-month insights, so you can finally answer: "Where did my money go?"
 
 ## Demo
 
