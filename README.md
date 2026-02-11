@@ -109,7 +109,7 @@ npm install
 npm run dev
 ```
 
-5. Open http://localhost:5173 in your browser to see the app.
+5. Open http://localhost:5000 in your browser to see the app.
 
 ## Roadmap / Features to Be Added
 
