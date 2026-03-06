@@ -30,7 +30,7 @@ I built a minimalistic expense tracker and analyzer that allows users to:
 - Categorize transactions
 - Generate natural-language explanations of spending behavior
 - Quickly skim through monthly expense summaries
-- Support multiple currencies
+- Support multiple currencies and custom categories
 
 ## Tech Stack
 
