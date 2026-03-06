@@ -3,7 +3,8 @@ import { CATEGORIES } from '@/domain/expense';
 import { test, expect, type Page } from '@playwright/test';
 import { format, subMonths } from 'date-fns';
 
-const currentMonth = new Date('2026-02-01');
+const today = new Date();
+const currentMonth = format(today, "yyyy-MM-dd")
 const previousMonth = subMonths(currentMonth, 1);
 const currentMonthLabel = format(currentMonth, 'MMMM yyyy');
 const previousMonthLabel = format(previousMonth, 'MMMM yyyy');
@@ -109,7 +110,6 @@ test.describe('Monthly Comparison Report', () => {
     });
 
     test('should handle case with no previous month data', async ({ page }) => {
-        const currentMonth = new Date();
         const currentMonthLabel = format(currentMonth, 'MMMM yyyy');
 
         // Add expense ONLY for current month

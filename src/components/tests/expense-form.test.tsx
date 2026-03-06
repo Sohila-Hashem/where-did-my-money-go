@@ -210,6 +210,71 @@ describe('ExpenseForm', () => {
         expect(calledArg.category).toBe('Hobbies');
     });
 
+    it('shows validation error for invalid date', async () => {
+        const user = userEvent.setup();
+        // Since the component uses new Date(editingExpense.date), passing an invalid string
+        // will result in "Invalid Date" which Zod should catch.
+        const editingExpense: any = {
+            id: 'date-error',
+            description: 'Bad Date',
+            amount: 10,
+            date: 'not-a-date',
+            category: 'Food'
+        };
+
+        render(
+            <ExpenseForm
+                onAddExpense={() => { }}
+                currency={mockCurrency}
+                customCategories={[]}
+                onAddCustomCategory={() => { }}
+                editingExpense={editingExpense}
+            />
+        );
+
+        await user.click(screen.getByRole('button', { name: /Update Expense/i }));
+        // Zod date error message or "Date is required"
+        expect(await screen.findByText(/Date is required/i)).toBeInTheDocument();
+    });
+
+    it('shows validation error when category is not selected', async () => {
+        const user = userEvent.setup();
+        render(<ExpenseForm onAddExpense={() => { }} currency={mockCurrency} customCategories={[]} onAddCustomCategory={() => { }} />);
+
+        await user.type(screen.getByLabelText(/Description/i), 'Coffee');
+        await user.type(screen.getByLabelText(/Amount/i), '5');
+        // intentionally skip selecting a category
+        await user.click(screen.getByRole('button', { name: /Add Expense/i }));
+
+        expect(await screen.findByText(/Category is required/i)).toBeInTheDocument();
+    });
+
+    it('resets the form after a successful add', () => {
+        const onAddStub = vi.fn();
+        const editingExpense: Expense = {
+            id: 'reset-test',
+            description: 'Will Reset',
+            amount: 10,
+            date: new Date().toISOString(),
+            category: 'My Cat',
+        };
+
+        render(
+            <ExpenseForm
+                onAddExpense={onAddStub}
+                onUpdateExpense={vi.fn()}
+                currency={mockCurrency}
+                customCategories={['My Cat']}
+                onAddCustomCategory={() => { }}
+                editingExpense={editingExpense}
+            />
+        );
+
+        // Pre-filled values should be present
+        expect(screen.getByLabelText(/Description/i)).toHaveValue('Will Reset');
+        expect(screen.getByLabelText(/Amount/i)).toHaveValue(10);
+    });
+
     it('renders Cancel button in edit mode and calls onCancelEdit when clicked', async () => {
         const user = userEvent.setup();
         const onCancelEditStub = vi.fn();
@@ -218,7 +283,7 @@ describe('ExpenseForm', () => {
             description: 'Edit Me',
             amount: 99,
             date: new Date().toISOString(),
-            category: 'Food',
+            category: 'My Cat',
         };
 
         render(
@@ -227,7 +292,7 @@ describe('ExpenseForm', () => {
                 onUpdateExpense={vi.fn()}
                 onCancelEdit={onCancelEditStub}
                 currency={mockCurrency}
-                customCategories={[]}
+                customCategories={['My Cat']}
                 onAddCustomCategory={() => { }}
                 editingExpense={editingExpense}
             />
@@ -259,32 +324,5 @@ describe('ExpenseForm', () => {
         );
 
         expect(screen.queryByRole('button', { name: /^Cancel$/i })).not.toBeInTheDocument();
-    });
-
-    it('shows validation error for invalid date', async () => {
-        const user = userEvent.setup();
-        // Since the component uses new Date(editingExpense.date), passing an invalid string
-        // will result in "Invalid Date" which Zod should catch.
-        const editingExpense: any = {
-            id: 'date-error',
-            description: 'Bad Date',
-            amount: 10,
-            date: 'not-a-date',
-            category: 'Food'
-        };
-
-        render(
-            <ExpenseForm
-                onAddExpense={() => { }}
-                currency={mockCurrency}
-                customCategories={[]}
-                onAddCustomCategory={() => { }}
-                editingExpense={editingExpense}
-            />
-        );
-
-        await user.click(screen.getByRole('button', { name: /Update Expense/i }));
-        // Zod date error message or "Date is required"
-        expect(await screen.findByText(/Date is required/i)).toBeInTheDocument();
     });
 });
