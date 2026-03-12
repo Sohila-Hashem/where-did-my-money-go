@@ -1,33 +1,41 @@
 import { render, screen } from '@testing-library/react';
 import { CustomCategoriesManager } from '../custom-categories-manager';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import userEvent from '@testing-library/user-event';
+import { useCustomCategories } from '@/hooks/use-custom-categories';
 
-// Mock Tooltip - Radix Tooltip can be tricky in JSDOM due to focus/hover
-// We can just mock the content to be always visible or use a simpler mock if needed.
-// However, standard testing-library often works if we just ignore the trigger logic and look for content.
-// For simplicity, let's just mock the Tooltip component if it causes issues.
-// But first, let's try with real components.
+vi.mock('@/hooks/use-custom-categories', () => ({
+    useCustomCategories: vi.fn(),
+}));
 
 describe('CustomCategoriesManager', () => {
-    const defaultProps = {
-        customCategories: ['Category 1', 'Category 2'],
-        onDeleteCustomCategory: vi.fn(),
-        onUpdateCustomCategory: vi.fn(),
-        onAddCustomCategory: vi.fn(),
-    };
+    const mockAdd = vi.fn();
+    const mockRemove = vi.fn();
+    const mockUpdate = vi.fn();
 
     beforeEach(() => {
         vi.clearAllMocks();
+        (useCustomCategories as Mock).mockReturnValue({
+            customCategories: ['Category 1', 'Category 2'],
+            add: mockAdd,
+            remove: mockRemove,
+            update: mockUpdate,
+        });
     });
 
     it('renders empty state when there are no custom categories', () => {
-        render(<CustomCategoriesManager {...defaultProps} customCategories={[]} />);
+        (useCustomCategories as Mock).mockReturnValue({
+            customCategories: [],
+            add: mockAdd,
+            remove: mockRemove,
+            update: mockUpdate,
+        });
+        render(<CustomCategoriesManager />);
         expect(screen.getByText(/No custom categories yet/i)).toBeInTheDocument();
     });
 
     it('renders the list of custom categories', () => {
-        render(<CustomCategoriesManager {...defaultProps} />);
+        render(<CustomCategoriesManager />);
         expect(screen.getByText('Category 1')).toBeInTheDocument();
         expect(screen.getByText('Category 2')).toBeInTheDocument();
         // Check that "Total: 2" appears exactly once
@@ -37,7 +45,7 @@ describe('CustomCategoriesManager', () => {
 
     it('starts editing when pencil icon is clicked', async () => {
         const user = userEvent.setup();
-        render(<CustomCategoriesManager {...defaultProps} />);
+        render(<CustomCategoriesManager />);
 
         // Find edit button for Category 1
         // The button has aria-label="Edit Category 1 category"
@@ -51,7 +59,7 @@ describe('CustomCategoriesManager', () => {
 
     it('shows error when resetting to empty name during edit', async () => {
         const user = userEvent.setup();
-        render(<CustomCategoriesManager {...defaultProps} />);
+        render(<CustomCategoriesManager />);
 
         await user.click(screen.getByLabelText(/Edit Category 1 category/i));
         const input = screen.getByRole('textbox');
@@ -64,7 +72,7 @@ describe('CustomCategoriesManager', () => {
 
     it('submits updated name and calls onUpdateCustomCategory', async () => {
         const user = userEvent.setup();
-        render(<CustomCategoriesManager {...defaultProps} />);
+        render(<CustomCategoriesManager />);
 
         await user.click(screen.getByLabelText(/Edit Category 1 category/i));
         const input = screen.getByRole('textbox');
@@ -73,12 +81,12 @@ describe('CustomCategoriesManager', () => {
         await user.type(input, 'Updated Category');
         await user.click(screen.getByLabelText(/Save category name/i));
 
-        expect(defaultProps.onUpdateCustomCategory).toHaveBeenCalledWith('Category 1', 'Updated Category');
+        expect(mockUpdate).toHaveBeenCalledWith('Category 1', 'Updated Category');
     });
 
     it('cancels editing when X icon is clicked', async () => {
         const user = userEvent.setup();
-        render(<CustomCategoriesManager {...defaultProps} />);
+        render(<CustomCategoriesManager />);
 
         await user.click(screen.getByLabelText(/Edit Category 1 category/i));
         expect(screen.getByRole('textbox')).toBeInTheDocument();
@@ -89,7 +97,7 @@ describe('CustomCategoriesManager', () => {
 
     it('opens delete dialog and confirms deletion', async () => {
         const user = userEvent.setup();
-        render(<CustomCategoriesManager {...defaultProps} />);
+        render(<CustomCategoriesManager />);
 
         // Click delete for Category 1
         await user.click(screen.getByLabelText(/Delete Category 1 category/i));
@@ -106,12 +114,12 @@ describe('CustomCategoriesManager', () => {
         const confirmButton = screen.getByRole('button', { name: /^Delete$/i });
         await user.click(confirmButton);
 
-        expect(defaultProps.onDeleteCustomCategory).toHaveBeenCalledWith('Category 1');
+        expect(mockRemove).toHaveBeenCalledWith('Category 1');
     });
 
     it('opens add dialog and adds a new category', async () => {
         const user = userEvent.setup();
-        render(<CustomCategoriesManager {...defaultProps} />);
+        render(<CustomCategoriesManager />);
 
         // Click 'Add custom category' button (trigger)
         await user.click(screen.getByLabelText(/Add custom category/i));
@@ -125,24 +133,24 @@ describe('CustomCategoriesManager', () => {
         // Click 'Add Category' button in dialog (the submit button)
         await user.click(screen.getByRole('button', { name: /^Add Category$/i }));
 
-        expect(defaultProps.onAddCustomCategory).toHaveBeenCalledWith('New Category');
+        expect(mockAdd).toHaveBeenCalledWith('New Category');
     });
 
     it('saving with the same name is a no-op and collapses the edit row', async () => {
         const user = userEvent.setup();
-        render(<CustomCategoriesManager {...defaultProps} />);
+        render(<CustomCategoriesManager />);
 
         await user.click(screen.getByLabelText(/Edit Category 1 category/i));
         // Do NOT change anything in the input – the value is already 'Category 1'
         await user.click(screen.getByLabelText(/Save category name/i));
 
-        expect(defaultProps.onUpdateCustomCategory).not.toHaveBeenCalled();
+        expect(mockUpdate).not.toHaveBeenCalled();
         expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
     });
 
     it('clears the edit error when the user types in the edit input', async () => {
         const user = userEvent.setup();
-        render(<CustomCategoriesManager {...defaultProps} />);
+        render(<CustomCategoriesManager />);
 
         // Trigger the error by saving an empty input
         await user.click(screen.getByLabelText(/Edit Category 1 category/i));
@@ -158,20 +166,20 @@ describe('CustomCategoriesManager', () => {
 
     it('saves the edit when Enter is pressed inside the input', async () => {
         const user = userEvent.setup();
-        render(<CustomCategoriesManager {...defaultProps} />);
+        render(<CustomCategoriesManager />);
 
         await user.click(screen.getByLabelText(/Edit Category 1 category/i));
         const input = screen.getByRole('textbox');
         await user.clear(input);
         await user.type(input, 'Renamed{Enter}');
 
-        expect(defaultProps.onUpdateCustomCategory).toHaveBeenCalledWith('Category 1', 'Renamed');
+        expect(mockUpdate).toHaveBeenCalledWith('Category 1', 'Renamed');
         expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
     });
 
     it('cancels the edit when Escape is pressed inside the input', async () => {
         const user = userEvent.setup();
-        render(<CustomCategoriesManager {...defaultProps} />);
+        render(<CustomCategoriesManager />);
 
         await user.click(screen.getByLabelText(/Edit Category 1 category/i));
         expect(screen.getByRole('textbox')).toBeInTheDocument();
@@ -182,7 +190,7 @@ describe('CustomCategoriesManager', () => {
 
     it('closes delete dialog without deleting when dialog is dismissed', async () => {
         const user = userEvent.setup();
-        render(<CustomCategoriesManager {...defaultProps} />);
+        render(<CustomCategoriesManager />);
 
         // Open delete dialog
         await user.click(screen.getByLabelText(/Delete Category 1 category/i));
@@ -191,7 +199,23 @@ describe('CustomCategoriesManager', () => {
         // Click the Cancel button inside the dialog
         await user.click(screen.getByRole('button', { name: /^Cancel$/i }));
 
-        expect(defaultProps.onDeleteCustomCategory).not.toHaveBeenCalled();
+        expect(mockRemove).not.toHaveBeenCalled();
         expect(screen.queryByText(/Are you sure you want to delete/i)).not.toBeInTheDocument();
+    });
+
+    it('calls the provided onUpdateCustomCategory function instead of the hook function', async () => {
+        const user = userEvent.setup();
+        const customOnUpdate = vi.fn();
+        render(<CustomCategoriesManager onUpdateCustomCategory={customOnUpdate} />);
+
+        await user.click(screen.getByLabelText(/Edit Category 1 category/i));
+        const input = screen.getByRole('textbox');
+
+        await user.clear(input);
+        await user.type(input, 'New Category Name');
+        await user.click(screen.getByLabelText(/Save category name/i));
+
+        expect(customOnUpdate).toHaveBeenCalledWith('Category 1', 'New Category Name');
+        expect(mockUpdate).not.toHaveBeenCalled();
     });
 });
