@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useCustomCategories } from "@/hooks/use-custom-categories";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format, formatISO } from "date-fns";
@@ -36,8 +37,6 @@ interface ExpenseFormProps {
 	onUpdateExpense?: (expense: Expense) => void;
 	onCancelEdit?: () => void;
 	currency: Currency;
-	customCategories: string[];
-	onAddCustomCategory: (category: string) => void;
 }
 
 export function ExpenseForm({
@@ -46,9 +45,8 @@ export function ExpenseForm({
 	onAddExpense,
 	onUpdateExpense,
 	onCancelEdit,
-	customCategories,
-	onAddCustomCategory,
 }: ExpenseFormProps) {
+	const { customCategories, add: onAddCustomCategory } = useCustomCategories();
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [newCategoryInput, setNewCategoryInput] = useState("");
 	const [newCategoryError, setNewCategoryError] = useState("");

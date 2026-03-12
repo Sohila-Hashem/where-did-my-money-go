@@ -1,16 +1,12 @@
-import * as React from "react";
 import { Outlet, createRootRoute } from "@tanstack/react-router";
-import { Toaster } from "@/components/ui/sonner";
+import { CustomCategoriesProvider } from '@/hooks/use-custom-categories'
+import { Toaster } from 'sonner'
 
 export const Route = createRootRoute({
-	component: RootComponent,
+    component: () => (
+        <CustomCategoriesProvider>
+            <Outlet />
+            <Toaster richColors position="top-center" />
+        </CustomCategoriesProvider>
+    ),
 });
-
-function RootComponent() {
-	return (
-		<React.Fragment>
-			<Outlet />
-			<Toaster position="top-right" />
-		</React.Fragment>
-	);
-}

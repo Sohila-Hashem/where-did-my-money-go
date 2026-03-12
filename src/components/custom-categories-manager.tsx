@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useCustomCategories } from "@/hooks/use-custom-categories";
 import { Pencil, Trash2, Check, X, Tag, BookAlertIcon } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Card } from "@/components/ui/card";
@@ -12,22 +13,21 @@ import {
 import { DeleteCustomCategoryDialog } from "./delete-custom-category-dialog";
 import { AddCustomCategoryDialog } from "./add-custom-category-dialog";
 
+
 interface CustomCategoriesManagerProps {
-    readonly customCategories: string[];
-    readonly onDeleteCustomCategory: (category: string) => void;
-    readonly onUpdateCustomCategory: (oldName: string, newName: string) => void;
-    readonly onAddCustomCategory: (category: string) => void;
+    readonly onUpdateCustomCategory?: (oldName: string, newName: string) => void;
 }
 
-export function CustomCategoriesManager({
-    customCategories,
-    onDeleteCustomCategory,
-    onUpdateCustomCategory,
-    onAddCustomCategory,
-}: CustomCategoriesManagerProps) {
+export function CustomCategoriesManager({ onUpdateCustomCategory }: CustomCategoriesManagerProps) {
+    const {
+        customCategories,
+        add: onAddCustomCategory,
+        remove: onDeleteCustomCategory,
+        update: hookUpdateCustomCategory
+    } = useCustomCategories();
     const [editingCategory, setEditingCategory] = useState<string | null>(null);
     const [editInput, setEditInput] = useState("");
-    const [editError, setEditError] = useState("");
+    const [editError, setEditError] = useState<string | null>(null);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
 
@@ -35,31 +35,42 @@ export function CustomCategoriesManager({
     const [newCategoryInput, setNewCategoryInput] = useState("");
     const [newCategoryError, setNewCategoryError] = useState("");
 
+    const handleUpdateCategory = (oldName: string, newName: string) => {
+        if (onUpdateCustomCategory) {
+            onUpdateCustomCategory(oldName, newName);
+        } else {
+            hookUpdateCustomCategory(oldName, newName);
+        }
+    };
+
     const handleStartEdit = (category: string) => {
         setEditingCategory(category);
         setEditInput(category);
-        setEditError("");
+        setEditError(null);
     };
 
     const handleCancelEdit = () => {
         setEditingCategory(null);
         setEditInput("");
-        setEditError("");
+        setEditError(null);
     };
 
     const handleSaveEdit = () => {
         if (!editingCategory) return
-        const trimmed = editInput.trim();
-        if (!trimmed) {
+        const trimmedNewName = editInput.trim();
+        if (!trimmedNewName) {
             setEditError("Category name cannot be empty.");
             return;
         }
-        if (trimmed === editingCategory) {
-            handleCancelEdit();
+        if (trimmedNewName === editingCategory) {
+            setEditingCategory(null);
+            setEditError(null);
             return;
         }
-        onUpdateCustomCategory(editingCategory, trimmed);
-        handleCancelEdit();
+
+        handleUpdateCategory(editingCategory, trimmedNewName);
+        setEditingCategory(null);
+        setEditError(null);
     };
 
     const handleDeleteClick = (category: string) => {

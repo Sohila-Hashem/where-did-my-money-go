@@ -16,7 +16,7 @@ import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { deleteExpense, loadCurrency, loadExpenses, saveCurrency, saveExpenses, updateExpense } from '@/lib/storage';
 import { v7 as uuid7 } from 'uuid';
-import { addCustomCategory, deleteCustomCategory, getCustomCategories, updateCustomCategory } from '@/api/custom-categories';
+import { useCustomCategories } from '@/hooks/use-custom-categories';
 
 export const Route = createFileRoute('/')({
     component: RouteComponent,
@@ -26,7 +26,6 @@ function RouteComponent() {
     const [expenses, setExpenses] = useState<Expense[]>([]);
     const [currency, setCurrency] = useState<Currency>(CURRENCIES[0]);
     const [editingExpense, setEditingExpense] = useState<Expense | undefined>();
-    const [customCategories, setCustomCategories] = useState<string[]>([]);
     const [showConfetti, setShowConfetti] = useState(false);
     const [isInitialized, setIsInitialized] = useState(false);
 
@@ -36,27 +35,12 @@ function RouteComponent() {
         const storedCurrency = loadCurrency();
 
         if (storedExpenses) {
-            try {
-                setExpenses(storedExpenses);
-            } catch (e) {
-                console.error("Failed to parse expenses:", e);
-            }
+            setExpenses(storedExpenses);
         }
 
         if (storedCurrency) {
-            try {
-                const found = CURRENCIES.find((c) => c.code === storedCurrency.code);
-                if (found) setCurrency(found);
-            } catch (e) {
-                console.error("Failed to parse currency:", e);
-            }
-        }
-
-        const storedCustomCategories = getCustomCategories();
-        if (storedCustomCategories.success && storedCustomCategories.data) {
-            setCustomCategories(storedCustomCategories.data);
-        } else if (storedCustomCategories.error) {
-            toast.error("Failed to load custom categories");
+            const found = CURRENCIES.find((c) => c.code === storedCurrency.code);
+            if (found) setCurrency(found);
         }
 
         setIsInitialized(true);
@@ -74,45 +58,16 @@ function RouteComponent() {
         saveCurrency(currency);
     }, [currency, isInitialized]);
 
-    const handleAddCustomCategory = (category: string) => {
-        const trimmed = category.trim();
-        if (!trimmed) {
-            return;
-        }
 
-        const result = addCustomCategory(trimmed)
-        if (result.error) {
-            toast.error(result.error ?? "Failed to add category")
-            return
-        }
-
-        setCustomCategories((prev) => [...prev, trimmed])
-        toast.success("Category added!")
-    };
-
-    const handleDeleteCustomCategory = (category: string) => {
-        const result = deleteCustomCategory(category)
-        if (result.error) {
-            toast.error(result.error ?? "Failed to delete category")
-            return
-        }
-        setCustomCategories((prev) => prev.filter((c) => c !== category));
-        toast.success("Category deleted!")
-    };
+    const { update: hookUpdateCustomCategory } = useCustomCategories();
 
     const handleUpdateCustomCategory = (oldName: string, newName: string) => {
-        const result = updateCustomCategory(oldName, newName)
-        if (result.error) {
-            toast.error(result.error ?? "Failed to update category")
-            return
-        }
-        setCustomCategories((prev) => prev.map((c) => (c === oldName ? newName : c)));
+        hookUpdateCustomCategory(oldName, newName);
         setExpenses((prev) =>
             prev.map((exp) =>
                 exp.category === oldName ? { ...exp, category: newName } : exp
             )
         );
-        toast.success("Category updated!")
     };
 
     const handleAddExpense = (expense: Omit<Expense, "id">) => {
@@ -173,15 +128,8 @@ function RouteComponent() {
                             onUpdateExpense={handleUpdateExpense}
                             onCancelEdit={() => setEditingExpense(undefined)}
                             currency={currency}
-                            customCategories={customCategories}
-                            onAddCustomCategory={handleAddCustomCategory}
                         />
-                        <CustomCategoriesManager
-                            customCategories={customCategories}
-                            onDeleteCustomCategory={handleDeleteCustomCategory}
-                            onUpdateCustomCategory={handleUpdateCustomCategory}
-                            onAddCustomCategory={handleAddCustomCategory}
-                        />
+                        <CustomCategoriesManager onUpdateCustomCategory={handleUpdateCustomCategory} />
                     </div>
 
                     {/* Right Column - Table and Insights */}

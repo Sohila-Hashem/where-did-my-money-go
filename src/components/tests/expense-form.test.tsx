@@ -1,10 +1,15 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { ExpenseForm } from '@/components/expense-form';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, type Mock, beforeEach } from 'vitest';
 import type { Expense } from '@/domain/expense';
 import userEvent from '@testing-library/user-event';
+import { useCustomCategories } from '@/hooks/use-custom-categories';
 
 import { CURRENCIES } from '@/lib/constants';
+
+vi.mock('@/hooks/use-custom-categories', () => ({
+    useCustomCategories: vi.fn(),
+}));
 
 // Mock ResizeObserver for Popover/Dialog
 global.ResizeObserver = class ResizeObserver {
@@ -22,15 +27,25 @@ Element.prototype.setPointerCapture = vi.fn();
 const mockCurrency = CURRENCIES.find(c => c.code === 'USD')!;
 
 describe('ExpenseForm', () => {
+    const mockAddCategory = vi.fn();
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        (useCustomCategories as Mock).mockReturnValue({
+            customCategories: [],
+            add: mockAddCategory,
+        });
+    });
+
     it('renders correctly', () => {
-        render(<ExpenseForm onAddExpense={() => { }} currency={mockCurrency} customCategories={[]} onAddCustomCategory={() => { }} />);
+        render(<ExpenseForm onAddExpense={() => { }} currency={mockCurrency} />);
         expect(screen.getByLabelText(/Description/i)).toBeInTheDocument();
         expect(screen.getByLabelText(/Amount/i)).toBeInTheDocument();
     });
 
     it('shows validation errors on empty submit', async () => {
         const user = userEvent.setup();
-        render(<ExpenseForm onAddExpense={() => { }} currency={mockCurrency} customCategories={[]} onAddCustomCategory={() => { }} />);
+        render(<ExpenseForm onAddExpense={() => { }} currency={mockCurrency} />);
 
         const submitButton = screen.getByRole('button', { name: /Add Expense/i });
         await user.click(submitButton);
@@ -43,7 +58,12 @@ describe('ExpenseForm', () => {
     it('renders with custom categories in the select dropdown', async () => {
         const user = userEvent.setup();
         const customCategories = ['Subscription', 'Freelance'];
-        render(<ExpenseForm onAddExpense={() => { }} currency={mockCurrency} customCategories={customCategories} onAddCustomCategory={() => { }} />);
+        (useCustomCategories as Mock).mockReturnValue({
+            customCategories,
+            add: mockAddCategory,
+        });
+
+        render(<ExpenseForm onAddExpense={() => { }} currency={mockCurrency} />);
 
         const categoryTrigger = document.getElementById('category');
         if (categoryTrigger) await user.click(categoryTrigger);
@@ -53,10 +73,9 @@ describe('ExpenseForm', () => {
         expect(screen.getAllByText('Freelance')[0]).toBeInTheDocument();
     });
 
-    it('calls onAddCustomCategory when adding a new category through the dialog', async () => {
+    it('calls add from hook when adding a new category through the dialog', async () => {
         const user = userEvent.setup();
-        const onAddCustomCategoryStub = vi.fn();
-        render(<ExpenseForm onAddExpense={() => { }} currency={mockCurrency} customCategories={[]} onAddCustomCategory={onAddCustomCategoryStub} />);
+        render(<ExpenseForm onAddExpense={() => { }} currency={mockCurrency} />);
 
         const addCategoryTrigger = screen.getByLabelText(/Add custom category/i);
         await user.click(addCategoryTrigger);
@@ -67,7 +86,7 @@ describe('ExpenseForm', () => {
         const addButton = screen.getByRole('button', { name: /^Add Category$/i });
         await user.click(addButton);
 
-        expect(onAddCustomCategoryStub).toHaveBeenCalledWith('New Category');
+        expect(mockAddCategory).toHaveBeenCalledWith('New Category');
     });
 
     it('pre-fills the form correctly when editing an expense', async () => {
@@ -81,13 +100,16 @@ describe('ExpenseForm', () => {
             category: 'My Special Category'
         };
 
+        (useCustomCategories as Mock).mockReturnValue({
+            customCategories: ['My Special Category'],
+            add: mockAddCategory,
+        });
+
         render(
             <ExpenseForm
                 onAddExpense={() => { }}
                 onUpdateExpense={onUpdateStub}
                 currency={mockCurrency}
-                customCategories={['My Special Category']}
-                onAddCustomCategory={() => { }}
                 editingExpense={editingExpense}
             />
         );
@@ -122,8 +144,6 @@ describe('ExpenseForm', () => {
             <ExpenseForm
                 onAddExpense={() => { }}
                 currency={mockCurrency}
-                customCategories={[]}
-                onAddCustomCategory={() => { }}
                 editingExpense={editingExpense}
             />
         );
@@ -134,7 +154,7 @@ describe('ExpenseForm', () => {
 
     it('shows validation error when category is not selected', async () => {
         const user = userEvent.setup();
-        render(<ExpenseForm onAddExpense={() => { }} currency={mockCurrency} customCategories={[]} onAddCustomCategory={() => { }} />);
+        render(<ExpenseForm onAddExpense={() => { }} currency={mockCurrency} />);
 
         await user.type(screen.getByLabelText(/Description/i), 'Coffee');
         await user.type(screen.getByLabelText(/Amount/i), '5');
@@ -153,13 +173,16 @@ describe('ExpenseForm', () => {
             category: 'My Cat',
         };
 
+        (useCustomCategories as Mock).mockReturnValue({
+            customCategories: ['My Cat'],
+            add: mockAddCategory,
+        });
+
         render(
             <ExpenseForm
                 onAddExpense={onAddStub}
                 onUpdateExpense={vi.fn()}
                 currency={mockCurrency}
-                customCategories={['My Cat']}
-                onAddCustomCategory={() => { }}
                 editingExpense={editingExpense}
             />
         );
@@ -179,14 +202,17 @@ describe('ExpenseForm', () => {
             category: 'My Cat',
         };
 
+        (useCustomCategories as Mock).mockReturnValue({
+            customCategories: ['My Cat'],
+            add: mockAddCategory,
+        });
+
         render(
             <ExpenseForm
                 onAddExpense={() => { }}
                 onUpdateExpense={vi.fn()}
                 onCancelEdit={onCancelEditStub}
                 currency={mockCurrency}
-                customCategories={['My Cat']}
-                onAddCustomCategory={() => { }}
                 editingExpense={editingExpense}
             />
         );
@@ -198,7 +224,7 @@ describe('ExpenseForm', () => {
     });
 
     it('initial state shows "Pick a date"', async () => {
-        render(<ExpenseForm onAddExpense={() => { }} currency={mockCurrency} customCategories={[]} onAddCustomCategory={() => { }} />);
+        render(<ExpenseForm onAddExpense={() => { }} currency={mockCurrency} />);
 
         await waitFor(() => {
             expect(screen.getByText(/Pick a date/i)).toBeInTheDocument();
