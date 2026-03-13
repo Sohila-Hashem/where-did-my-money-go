@@ -114,7 +114,7 @@ npm run dev
 ## Roadmap / Features to Be Added
 
 - [x] Support for custom categories
-- [ ] Allow filtering by category
+- [x] Allow filtering by category
 - [ ] Import expenses from a CSV file
 - [ ] Export reports as PDF
 - [ ] Optionally sync expenses and preferences (custom categories, currency, etc.) across devices by creating an account.
