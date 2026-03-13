@@ -63,6 +63,20 @@ describe('ExpenseTable', () => {
         expect(screen.getByText((content) => content.includes('1,070'))).toBeInTheDocument();
     });
 
+    it('renders both month and category filter selects', () => {
+        render(
+            <ExpenseTable
+                expenses={mockExpenses}
+                onDeleteExpense={onDeleteExpense}
+                onEditExpense={onEditExpense}
+                currency={mockCurrency}
+            />
+        );
+
+        expect(screen.getByText('Filter by month:')).toBeInTheDocument();
+        expect(screen.getByText('Filter by category:')).toBeInTheDocument();
+    });
+
     it('filters expenses by month', async () => {
         const user = userEvent.setup();
         render(
@@ -78,13 +92,9 @@ describe('ExpenseTable', () => {
         expect(screen.getByText('Groceries')).toBeInTheDocument();
         expect(screen.getByText('Cinema')).toBeInTheDocument();
 
-        // Select October 2023
-        const filterSelect = screen.getAllByRole('combobox')[0]; // There are multiple selects potentially (for pagination? no, just filter here)
-        // Actually the select might be hard to identify if there are others on page, but here it's isolated.
-        // The label says "Filter by month:"
-
-        // Radix select trigger
-        await user.click(filterSelect);
+        // Select October 2023 — first combobox is Month
+        const [monthSelect] = screen.getAllByRole('combobox');
+        await user.click(monthSelect);
 
         // Find October 2023 option
         const octoberOption = await screen.findByText('October 2023');
@@ -96,8 +106,131 @@ describe('ExpenseTable', () => {
         expect(screen.getByText('Rent')).toBeInTheDocument(); // October
 
         // Check new total: 1050
-        // Check new total: 1050
         expect(screen.getByText((content) => content.includes('1,050'))).toBeInTheDocument();
+    });
+
+    it('filters expenses by a preset category', async () => {
+        const user = userEvent.setup();
+        render(
+            <ExpenseTable
+                expenses={mockExpenses}
+                onDeleteExpense={onDeleteExpense}
+                onEditExpense={onEditExpense}
+                currency={mockCurrency}
+            />
+        );
+
+        // All visible initially
+        expect(screen.getByText('Groceries')).toBeInTheDocument();
+        expect(screen.getByText('Rent')).toBeInTheDocument();
+        expect(screen.getByText('Cinema')).toBeInTheDocument();
+
+        // Second combobox is Category
+        const [, categorySelect] = screen.getAllByRole('combobox');
+        await user.click(categorySelect);
+
+        const foodOption = await screen.findByRole('option', { name: 'Food' });
+        await user.click(foodOption);
+
+        // Only Food expenses visible
+        expect(screen.getByText('Groceries')).toBeInTheDocument();
+        expect(screen.queryByText('Rent')).not.toBeInTheDocument();
+        expect(screen.queryByText('Cinema')).not.toBeInTheDocument();
+
+        // 1 expense left, total should be the amount of the remaining expense
+        expect(screen.getByText('1 expense')).toBeInTheDocument();
+        const totalsRow = screen.getByText(/Total:/i).closest('div');
+        // Match the number 50 with any currency symbol prefix
+        expect(totalsRow?.textContent).toContain(`${mockCurrency.symbol}50`);
+    });
+
+    it('filters expenses by a custom category', async () => {
+        const user = userEvent.setup();
+        const expensesWithCustom: Expense[] = [
+            ...mockExpenses,
+            { id: '4', description: 'Spa day', amount: 80, category: 'Wellness', date: '2023-10-10' },
+        ];
+
+        render(
+            <ExpenseTable
+                expenses={expensesWithCustom}
+                onDeleteExpense={onDeleteExpense}
+                onEditExpense={onEditExpense}
+                currency={mockCurrency}
+                customCategories={['Wellness']}
+            />
+        );
+
+        const [, categorySelect] = screen.getAllByRole('combobox');
+        await user.click(categorySelect);
+
+        const wellnessOption = await screen.findByRole('option', { name: 'Wellness' });
+        await user.click(wellnessOption);
+
+        expect(screen.getByText('Spa day')).toBeInTheDocument();
+        expect(screen.queryByText('Groceries')).not.toBeInTheDocument();
+        expect(screen.queryByText('Rent')).not.toBeInTheDocument();
+        expect(screen.queryByText('Cinema')).not.toBeInTheDocument();
+    });
+
+    it('resets to all expenses when "All Categories" is selected', async () => {
+        const user = userEvent.setup();
+        render(
+            <ExpenseTable
+                expenses={mockExpenses}
+                onDeleteExpense={onDeleteExpense}
+                onEditExpense={onEditExpense}
+                currency={mockCurrency}
+            />
+        );
+
+        const [, categorySelect] = screen.getAllByRole('combobox');
+
+        // First filter to Food
+        await user.click(categorySelect);
+        await user.click(await screen.findByRole('option', { name: 'Food' }));
+        expect(screen.queryByText('Rent')).not.toBeInTheDocument();
+
+        // Then reset to All Categories
+        await user.click(categorySelect);
+        await user.click(await screen.findByRole('option', { name: 'All Categories' }));
+
+        expect(screen.getByText('Groceries')).toBeInTheDocument();
+        expect(screen.getByText('Rent')).toBeInTheDocument();
+        expect(screen.getByText('Cinema')).toBeInTheDocument();
+    });
+
+    it('applies both month and category filters together', async () => {
+        const user = userEvent.setup();
+        const expenses: Expense[] = [
+            { id: '1', description: 'Groceries', amount: 50, category: 'Food', date: '2023-10-01' },
+            { id: '2', description: 'Lunch', amount: 20, category: 'Food', date: '2023-09-10' },
+            { id: '3', description: 'Rent', amount: 1000, category: 'Bills', date: '2023-10-05' },
+        ];
+
+        render(
+            <ExpenseTable
+                expenses={expenses}
+                onDeleteExpense={onDeleteExpense}
+                onEditExpense={onEditExpense}
+                currency={mockCurrency}
+            />
+        );
+
+        const [monthSelect, categorySelect] = screen.getAllByRole('combobox');
+
+        // Filter by October
+        await user.click(monthSelect);
+        await user.click(await screen.findByText('October 2023'));
+
+        // Filter by Food
+        await user.click(categorySelect);
+        await user.click(await screen.findByRole('option', { name: 'Food' }));
+
+        // Only October + Food matches
+        expect(screen.getByText('Groceries')).toBeInTheDocument();
+        expect(screen.queryByText('Lunch')).not.toBeInTheDocument();   // September Food
+        expect(screen.queryByText('Rent')).not.toBeInTheDocument();    // October Bills
     });
 
     it('calls onEditExpense when edit button is clicked', async () => {

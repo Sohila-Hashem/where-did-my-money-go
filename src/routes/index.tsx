@@ -59,7 +59,7 @@ function RouteComponent() {
     }, [currency, isInitialized]);
 
 
-    const { update: hookUpdateCustomCategory } = useCustomCategories();
+    const { update: hookUpdateCustomCategory, customCategories } = useCustomCategories();
 
     const handleUpdateCustomCategory = (oldName: string, newName: string) => {
         hookUpdateCustomCategory(oldName, newName);
@@ -139,6 +139,7 @@ function RouteComponent() {
                             onDeleteExpense={handleDeleteExpense}
                             onEditExpense={handleEditExpense}
                             currency={currency}
+                            customCategories={customCategories}
                         />
 
                         <div className="grid md:grid-cols-2 gap-6">
