@@ -31,14 +31,16 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { type Currency } from "@/lib/constants";
-import { filterExpensesByMonth, getAvailableMonths, getTotalAmount, type Expense } from "@/domain/expense";
+import { filterExpensesByMonth, filterExpensesByCategory, getAvailableMonths, getTotalAmount, type Expense } from "@/domain/expense";
 import { formatCurrency } from "@/lib/utils";
+import { CategorySelect } from "@/components/category-select";
 
 interface ExpenseTableProps {
     expenses: Expense[];
     onDeleteExpense: (id: string) => void;
     onEditExpense: (expense: Expense) => void;
     currency: Currency;
+    customCategories?: string[];
 }
 
 export function ExpenseTable({
@@ -46,8 +48,10 @@ export function ExpenseTable({
     onDeleteExpense,
     onEditExpense,
     currency,
+    customCategories = [],
 }: ExpenseTableProps) {
     const [selectedMonth, setSelectedMonth] = useState<string>("all");
+    const [selectedCategory, setSelectedCategory] = useState<string>("all");
     const [deleteId, setDeleteId] = useState<string | null>(null);
 
     const availableMonths = useMemo(() => {
@@ -55,9 +59,15 @@ export function ExpenseTable({
     }, [expenses]);
 
     const filteredExpenses = useMemo(() => {
-        if (selectedMonth === "all") return expenses;
-        return filterExpensesByMonth(expenses, selectedMonth);
-    }, [expenses, selectedMonth]);
+        let result = expenses;
+        if (selectedMonth !== "all") {
+            result = filterExpensesByMonth(result, selectedMonth);
+        }
+        if (selectedCategory !== "all") {
+            result = filterExpensesByCategory(result, selectedCategory);
+        }
+        return result;
+    }, [expenses, selectedMonth, selectedCategory]);
 
     const sortedExpenses = useMemo(() => {
         return [...filteredExpenses].sort((a, b) => {
@@ -91,21 +101,33 @@ export function ExpenseTable({
                                 </motion.div>
                                 <h3>Expenses</h3>
                             </div>
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
-                                <span className="text-sm text-muted-foreground whitespace-nowrap">Filter by month:</span>
-                                <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                                    <SelectTrigger className="w-full sm:w-[180px]">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">All Months</SelectItem>
-                                        {availableMonths?.map((month) => (
-                                            <SelectItem key={month} value={month}>
-                                                {format(new Date(month + "-01"), "MMMM yyyy")}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+                                    <span className="text-sm text-muted-foreground whitespace-nowrap">Filter by month:</span>
+                                    <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                                        <SelectTrigger className="w-full sm:w-[160px]">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Months</SelectItem>
+                                            {availableMonths?.map((month) => (
+                                                <SelectItem key={month} value={month}>
+                                                    {format(new Date(month + "-01"), "MMMM yyyy")}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+                                    <span className="text-sm text-muted-foreground whitespace-nowrap">Filter by category:</span>
+                                    <CategorySelect
+                                        value={selectedCategory}
+                                        onValueChange={setSelectedCategory}
+                                        customCategories={customCategories}
+                                        showAllOption
+                                        triggerClassName="w-full sm:w-[180px]"
+                                    />
+                                </div>
                             </div>
                         </div>
 

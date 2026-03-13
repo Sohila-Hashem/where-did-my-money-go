@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { getTotalAmount, filterExpensesByMonth, getAvailableMonths } from "@/domain/expense";
+import { getTotalAmount, filterExpensesByMonth, filterExpensesByCategory, getAvailableMonths } from "@/domain/expense";
 import type { Expense } from "@/domain/expense";
 
 const mockExpenses: Expense[] = [
@@ -68,6 +68,33 @@ describe("Expense Helper Functions", () => {
 
         it("returns empty array for empty expenses", () => {
             expect(getAvailableMonths([])).toEqual([]);
+        });
+    });
+
+    describe("filterExpensesByCategory", () => {
+        it("returns only expenses matching the given preset category", () => {
+            const result = filterExpensesByCategory(mockExpenses, "Food");
+            expect(result).toHaveLength(2);
+            expect(result.map((e) => e.id)).toEqual(expect.arrayContaining(["1", "3"]));
+        });
+
+        it("returns empty array when no expense matches the category", () => {
+            const result = filterExpensesByCategory(mockExpenses, "Entertainment");
+            expect(result).toHaveLength(0);
+        });
+
+        it("matches a custom category string correctly", () => {
+            const expensesWithCustom: Expense[] = [
+                ...mockExpenses,
+                { id: "5", date: "2026-10-01T10:00:00.000Z", amount: 30, category: "My Custom", description: "Custom thing" },
+            ];
+            const result = filterExpensesByCategory(expensesWithCustom, "My Custom");
+            expect(result).toHaveLength(1);
+            expect(result[0].id).toBe("5");
+        });
+
+        it("returns empty array for empty expenses list", () => {
+            expect(filterExpensesByCategory([], "Food")).toHaveLength(0);
         });
     });
 });

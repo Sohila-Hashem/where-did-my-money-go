@@ -3,33 +3,24 @@ import { useCustomCategories } from "@/hooks/use-custom-categories";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format, formatISO } from "date-fns";
-import { Calendar as CalendarIcon, Tag } from "lucide-react";
+import { Calendar as CalendarIcon } from "lucide-react";
 import { motion } from "motion/react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-	Select,
-	SelectContent,
-	SelectGroup,
-	SelectItem,
-	SelectLabel,
-	SelectSeparator,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
-import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { CATEGORIES_SORTED, type Expense } from "@/domain/expense";
+import { type Expense } from "@/domain/expense";
 import { type Currency } from "@/lib/constants";
 import { expenseSchema, type ExpenseFormData } from "@/schemas/expense-schema";
 import { cn } from "@/lib/utils";
 import { AddCustomCategoryDialog } from "./add-custom-category-dialog";
+import { CategorySelect } from "@/components/category-select";
 
 interface ExpenseFormProps {
 	onAddExpense: (expense: Omit<Expense, "id">) => void;
@@ -212,37 +203,12 @@ export function ExpenseForm({
 								control={control}
 								name="category"
 								render={({ field }) => (
-									<Select value={field.value ?? ""} onValueChange={field.onChange}>
-										<SelectTrigger id="category">
-											<SelectValue aria-label="Select category" placeholder="Select category" />
-										</SelectTrigger>
-										<SelectContent>
-											{customCategories.length > 0 && (
-												<>
-													<SelectGroup>
-														<SelectLabel className="flex items-center gap-1.5">
-															<Tag className="size-3" />
-															My Categories
-														</SelectLabel>
-														{customCategories.map((cat) => (
-															<SelectItem key={cat} value={cat}>
-																{cat}
-															</SelectItem>
-														))}
-													</SelectGroup>
-													<SelectSeparator />
-												</>
-											)}
-											<SelectGroup>
-												<SelectLabel>Preset Categories</SelectLabel>
-												{CATEGORIES_SORTED.map((cat) => (
-													<SelectItem key={cat.category} value={cat.category}>
-														{cat.category}
-													</SelectItem>
-												))}
-											</SelectGroup>
-										</SelectContent>
-									</Select>
+									<CategorySelect
+										id="category"
+										value={field.value ?? ""}
+										onValueChange={field.onChange}
+										customCategories={customCategories}
+									/>
 								)}
 							/>
 							{errors.category && (
