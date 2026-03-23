@@ -9,6 +9,7 @@
 ![Vitest](https://img.shields.io/badge/Vitest-6E9F18?logo=vitest&logoColor=white&style=flat-square)
 ![Playwright](https://img.shields.io/badge/Playwright-2EAD33?logo=playwright&logoColor=white&style=flat-square)
 ![TailwindCSS](https://img.shields.io/badge/TailwindCSS-06B6D4?logo=tailwindcss&logoColor=white&style=flat-square)
+![PWA](https://img.shields.io/badge/PWA-5A0FC8?logo=pwa&logoColor=white&style=flat-square)
 
 A minimalistic expense tracker and analyzer that turns your spending into clear monthly and month-to-month insights, so you can finally answer: "Where does it all go?" PandaCoins helps you track your coins!
 
@@ -30,6 +31,7 @@ I built a minimalistic expense tracker and analyzer that allows users to:
 - Generate natural-language explanations of spending behavior
 - Quickly skim through monthly expense summaries
 - Support multiple currencies and custom categories
+- **Installable PWA**: Access PandaCoins instantly from your home screen with offline support.
 
 ## Tech Stack
 
@@ -49,6 +51,9 @@ I built a minimalistic expense tracker and analyzer that allows users to:
 
 - **Shadcn UI**  
   Used to speed up UI development while maintaining consistency and focusing on core features.
+
+- **Vite PWA Plugin**  
+  Used to transform the app into a Progressive Web App, enabling installation and offline capabilities.
 
 ### Testing
 
@@ -114,6 +119,7 @@ npm run dev
 
 - [x] Support for custom categories
 - [x] Allow filtering by category
+- [x] **PWA Support**: App is now installable and works offline.
 - [ ] Cash Flow Snapshot Widget – Homescreen widget showing remaining budget for week/month without opening the app.
 - [ ] Import expenses from a CSV file
 - [ ] Export reports as PDF
