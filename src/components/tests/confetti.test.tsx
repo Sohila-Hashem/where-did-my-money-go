@@ -1,5 +1,5 @@
 import { render, act } from '@testing-library/react';
-import { Confetti } from '@/components/confetti';
+import { Confetti } from '@/components/shared/confetti';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 describe('Confetti', () => {

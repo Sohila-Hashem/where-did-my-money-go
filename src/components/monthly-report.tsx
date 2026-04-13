@@ -48,6 +48,7 @@ export function MonthlyReport({ expenses, currency }: MonthlyReportProps) {
 
     return (
         <motion.div
+            className="h-full"
             role="region"
             aria-label="Monthly Report"
             initial={{ opacity: 0, scale: 0.95 }}
@@ -55,10 +56,11 @@ export function MonthlyReport({ expenses, currency }: MonthlyReportProps) {
             transition={{ duration: 0.5, delay: 0.2 }}
         >
             <motion.div
+                className="h-full"
                 whileHover={{ scale: 1.02 }}
                 transition={{ type: "spring", stiffness: 300 }}
             >
-                <Card className="p-4 sm:p-6">
+                <Card className="p-4 sm:p-6 h-full flex flex-col">
                     <div className="space-y-4">
                         <motion.div
                             className="flex items-center gap-2"
@@ -74,6 +76,10 @@ export function MonthlyReport({ expenses, currency }: MonthlyReportProps) {
                             </motion.div>
                             <h2 className="text-lg font-semibold">Monthly Report</h2>
                         </motion.div>
+
+                        <p className="text-sm text-muted-foreground">
+                            Get a detailed breakdown of your spending for the selected month.
+                        </p>
 
                         <div className="flex flex-col sm:flex-row gap-3">
                             <Select value={selectedMonth} onValueChange={setSelectedMonth}>

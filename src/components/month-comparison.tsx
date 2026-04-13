@@ -54,6 +54,7 @@ export function MonthComparison({ expenses, currency }: MonthComparisonProps) {
 
     return (
         <motion.div
+            className="h-full"
             role="region"
             aria-label="Monthly Comparison"
             initial={{ opacity: 0, scale: 0.95 }}
@@ -61,10 +62,11 @@ export function MonthComparison({ expenses, currency }: MonthComparisonProps) {
             transition={{ duration: 0.5, delay: 0.3 }}
         >
             <motion.div
+                className="h-full"
                 whileHover={{ scale: 1.02 }}
                 transition={{ type: "spring", stiffness: 300 }}
             >
-                <Card className="p-4 sm:p-6">
+                <Card className="p-4 sm:p-6 h-full flex flex-col">
                     <div className="space-y-4">
                         <motion.div
                             className="flex items-center gap-2"
