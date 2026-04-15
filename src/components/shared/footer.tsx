@@ -13,7 +13,7 @@ export function Footer() {
                 </p>
                 <Separator decorative className="my-6 w-1/3 mx-auto" />
                 <p className="flex items-center justify-center text-sm italic">
-                    @{new Date().getFullYear()} <span className="font-bold text-primary px-1"><a href="https://github.com/sohila-hashem" target="_blank">StormCode</a></span>. All rights reserved.
+                    @{new Date().getFullYear()} <span className="font-bold text-primary px-1"><a href="https://github.com/sohila-hashem" target="_blank" rel="noopener noreferrer">StormCode</a></span>. All rights reserved.
                 </p>
             </div>
         </footer>

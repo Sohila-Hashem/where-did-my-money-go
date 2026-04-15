@@ -2,8 +2,8 @@ import { cn } from "@/lib/utils";
 import { motion } from "motion/react";
 
 interface LogoProps {
-    className?: string;
-    showText?: boolean;
+    readonly className?: string;
+    readonly showText?: boolean;
 }
 export function Logo({ className, showText = true }: LogoProps) {
     return (

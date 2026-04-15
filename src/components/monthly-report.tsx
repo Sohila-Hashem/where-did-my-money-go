@@ -1,20 +1,13 @@
 import { useState, useMemo } from "react";
-import { format } from "date-fns";
 import { FileText, Sparkles } from "lucide-react";
 import { motion } from "motion/react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
 import { LoadingSpinner } from "@/components/loading-spinner";
 import { type Currency } from "@/lib/constants";
 import { type Expense, getAvailableMonths } from "@/domain/expense";
 import { generateMonthlyReport } from "@/domain/aggregate";
+import { MonthSelector } from "./month-selector";
 
 interface MonthlyReportProps {
     expenses: Expense[];
@@ -82,24 +75,7 @@ export function MonthlyReport({ expenses, currency }: MonthlyReportProps) {
                         </p>
 
                         <div className="flex flex-col sm:flex-row gap-3">
-                            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                                <SelectTrigger className="flex-1" aria-label="Select a month">
-                                    <SelectValue placeholder="Select a month" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {availableMonths.length === 0 ? (
-                                        <SelectItem value="none" disabled>
-                                            No expenses yet
-                                        </SelectItem>
-                                    ) : (
-                                        availableMonths.map((month) => (
-                                            <SelectItem key={month} value={month}>
-                                                {format(new Date(month + "-01"), "MMMM yyyy")}
-                                            </SelectItem>
-                                        ))
-                                    )}
-                                </SelectContent>
-                            </Select>
+                            <MonthSelector availableMonths={availableMonths} selectedMonth={selectedMonth} setSelectedMonth={setSelectedMonth} />
 
                             <Button
                                 onClick={handleGenerateReport}

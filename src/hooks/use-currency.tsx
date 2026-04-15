@@ -1,38 +1,39 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useMemo } from "react";
 import { type Currency, CURRENCIES } from "@/lib/constants";
 import { loadCurrency, saveCurrency } from "@/lib/storage";
 
 interface CurrencyContextType {
-  currency: Currency;
-  setCurrency: (currency: Currency) => void;
-  isInitialized: boolean;
+  readonly currency: Currency;
+  readonly setCurrency: (currency: Currency) => void;
+  readonly isInitialized: boolean;
 }
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
 
-export function CurrencyProvider({ children }: { children: React.ReactNode }) {
-  const [currency, setCurrencyState] = useState<Currency>(CURRENCIES[0]);
+export function CurrencyProvider({ children }: { readonly children: React.ReactNode }) {
+  const [currency, setCurrency] = useState<Currency>(CURRENCIES[0]);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Load from localStorage on mount
-  useEffect(() => {
+  useEffect(function loadCurrencyFromLocalStorage() {
     const storedCurrency = loadCurrency();
     if (storedCurrency) {
       const found = CURRENCIES.find((c) => c.code === storedCurrency.code);
       if (found) {
-        setCurrencyState(found);
+        setCurrency(found);
       }
     }
     setIsInitialized(true);
   }, []);
 
-  const setCurrency = (newCurrency: Currency) => {
-    setCurrencyState(newCurrency);
+  const handleSetCurrency = (newCurrency: Currency) => {
+    setCurrency(newCurrency);
     saveCurrency(newCurrency);
   };
 
+  const contextValue = useMemo(() => ({ currency, setCurrency: handleSetCurrency, isInitialized }), [currency, handleSetCurrency, isInitialized]);
+
   return (
-    <CurrencyContext.Provider value={{ currency, setCurrency, isInitialized }}>
+    <CurrencyContext.Provider value={contextValue}>
       {children}
     </CurrencyContext.Provider>
   );

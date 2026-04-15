@@ -2,10 +2,15 @@ import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { ChevronDown } from "lucide-react";
 
+const features = [
+    { id: 1, color: "bg-primary shadow-[0_0_10px_rgba(var(--primary),0.5)]", text: "Zero Tracking", delay: 0 },
+    { id: 2, color: "bg-accent", text: "Offline First", delay: 0.1 },
+    { id: 3, color: "bg-secondary", text: "Smart Insights", delay: 0.2 },
+]
 
 export function HeroSection() {
     return (
-        <section className="flex flex-col items-center justify-center text-center py-20 min-h-[60vh] relative">
+        <section className="flex flex-col items-center justify-center text-center py-20 min-h-screen relative">
             <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -27,7 +32,7 @@ export function HeroSection() {
                 </p>
 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-                    <Button size="lg" className="rounded-full px-8 text-lg font-semibold h-14 cursor-pointer">
+                    <Button size="lg" className="rounded-full px-8 text-lg font-semibold h-14 cursor-pointer" asChild>
                         <a href="#manage-expenses">Start Tracking Now</a>
                     </Button>
                     <Button variant="outline" size="lg" className="rounded-full px-8 text-lg font-semibold h-14 cursor-pointer" asChild>
@@ -42,12 +47,8 @@ export function HeroSection() {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 1, duration: 1 }}
             >
-                {[
-                    { color: "bg-primary shadow-[0_0_10px_rgba(var(--primary),0.5)]", text: "Zero Tracking", delay: 0 },
-                    { color: "bg-accent", text: "Offline First", delay: 0.1 },
-                    { color: "bg-secondary", text: "Smart Insights", delay: 0.2 },
-                ].map((item, index) => (
-                    <div key={index} className="flex items-center gap-2">
+                {features.map((item) => (
+                    <div key={item.id} className="flex items-center gap-2">
                         <motion.div
                             className={`h-2 w-2 rounded-full ${item.color}`}
                             animate={{ scale: [1, 1.4, 1], opacity: [0.5, 1, 0.5] }}

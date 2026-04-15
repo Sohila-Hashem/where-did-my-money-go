@@ -1,7 +1,6 @@
-import { Card, CardHeader } from '@/components/ui/card'
+import { Card, CardHeader, CardDescription } from '@/components/ui/card'
 import { Logo } from '@/components/shared/logo'
 import { BackgroundShape } from '@/assets/shapes/background-shape'
-import { CardDescription } from '@/components/ui/card'
 import { Loader2Icon } from 'lucide-react'
 
 
@@ -15,7 +14,7 @@ export function LoadingOverlay({ description }: LoadingOverlayProps) {
                 <BackgroundShape />
             </div>
 
-            <Card className='z-1 w-full border-none shadow-md sm:max-w-md'>
+            <Card className='z-10 w-full border-none shadow-md sm:max-w-md'>
                 <CardHeader className='gap-2'>
                     <div className='flex items-center justify-between gap-2'>
                         <Logo />

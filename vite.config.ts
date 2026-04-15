@@ -100,6 +100,7 @@ export default defineConfig(({ mode }) => {
           "src/reportWebVitals.ts",
           "src/routeTree.gen.ts",
           "src/**/__root.tsx",
+          "src/routes/**",
           "src/lib/constants.ts",
           "src/schemas/expense-schema.ts",
           "vite.config.ts",

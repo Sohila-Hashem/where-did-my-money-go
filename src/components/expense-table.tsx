@@ -210,7 +210,7 @@ export function ExpenseTable({
                                     transition={{ delay: 0.3 }}
                                 >
                                     <span className="text-sm text-muted-foreground font-medium">
-                                        {filteredExpenses.length} transaction{filteredExpenses.length !== 1 ? "s" : ""}
+                                        {filteredExpenses.length} transaction{filteredExpenses.length === 1 ? "" : "s"}
                                     </span>
                                     <div className="text-xl">
                                         <span className="text-muted-foreground mr-2 text-sm">Total:</span>

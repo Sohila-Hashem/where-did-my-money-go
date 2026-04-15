@@ -15,46 +15,55 @@ import { ComingSoonBadge } from "./shared/badges";
 
 const features = [
     {
+        id: 1,
         icon: <Zap className="w-8 h-8 text-primary" />,
         title: "Extreme Simplicity",
         description: "Designed for speed and ease of use. Track your expenses in seconds with zero friction."
     },
     {
+        id: 2,
         icon: <MousePointerClick className="w-8 h-8 text-blue-500" />,
         title: "No Account Needed",
         description: "Start tracking immediately with no sign-up, Get started in seconds."
     },
     {
+        id: 3,
         icon: <Gift className="w-8 h-8 text-orange-500" />,
         title: "100% Free",
         description: "No hidden fees, no subscriptions, and no ads. Every single feature is completely free."
     },
     {
+        id: 4,
         icon: <ShieldCheck className="w-8 h-8 text-secondary" />,
         title: "Privacy First",
         description: "Your financial data stays on your device. We don't track or sell your information."
     },
     {
+        id: 5,
         icon: <FileText className="w-8 h-8 text-accent" />,
         title: "Straight to the Point",
         description: "Text-based, human-readable analytics. No complex charts—just clear summaries of your spending."
     },
     {
+        id: 6,
         icon: <Settings2 className="w-8 h-8 text-violet-500" />,
         title: "Fully Customizable",
         description: "Track in any currency and organize your spending with custom categories that fit your lifestyle."
     },
     {
+        id: 7,
         icon: <SmartphoneNfc className="w-8 h-8 text-emerald-500" />,
         title: "Offline Support",
         description: "Install it as a PWA and use it seamlessly without an internet connection. Your data stays with you, always."
     },
     {
+        id: 8,
         icon: <ArrowLeftRight className="w-8 h-8 text-rose-500" />,
         title: "Trend Comparison",
         description: "Compare months with a single click. Understand how your habits evolve over time."
     },
     {
+        id: 9,
         icon: <Database className="w-8 h-8 text-indigo-500" />,
         title: "Local Sovereignty",
         description: "Export and import your data anytime. You are the master of your records.",
@@ -116,8 +125,8 @@ export function FeaturesHighlight() {
                     whileInView="visible"
                     viewport={{ once: true }}
                 >
-                    {features.map((feature, index) => (
-                        <motion.div key={index} variants={itemVariants} className="relative">
+                    {features.map((feature) => (
+                        <motion.div key={feature.id} variants={itemVariants} className="relative">
                             <Card className="h-full border-none bg-accent/5 backdrop-blur-sm hover:bg-accent/10 transition-colors group">
                                 <CardContent className="p-8 space-y-4">
                                     <div className="p-3 bg-background rounded-2xl w-fit shadow-sm group-hover:scale-110 transition-transform">

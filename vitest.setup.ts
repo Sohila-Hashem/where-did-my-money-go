@@ -2,17 +2,17 @@ import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 
 // Mock ResizeObserver
-global.ResizeObserver = class ResizeObserver {
-    observe() { }
-    unobserve() { }
-    disconnect() { }
+globalThis.ResizeObserver = class ResizeObserver {
+    observe = vi.fn();
+    unobserve = vi.fn();
+    disconnect = vi.fn();
 };
 
 // Mock IntersectionObserver (required by motion/react whileInView)
-global.IntersectionObserver = class IntersectionObserver {
-    observe() { }
-    unobserve() { }
-    disconnect() { }
+globalThis.IntersectionObserver = class IntersectionObserver {
+    observe = vi.fn();
+    unobserve = vi.fn();
+    disconnect = vi.fn();
 } as unknown as typeof IntersectionObserver;
 
 // Mock ScrollIntoView and Pointer Events for Radix UI
