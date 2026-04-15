@@ -108,9 +108,9 @@ function HomePage() {
 
                 {/* Management & History Section */}
                 <section id="manage-expenses" className="container mx-auto px-4 max-w-7xl scroll-mt-24">
-                    <div className="grid grid-cols-12 gap-8 items-stretch">
+                    <div className="grid grid-cols-12 gap-8 items-stretch max-h-[800px] overflow-hidden">
                         {/* Sidebar: Form & Categories */}
-                        <div className="col-span-12 lg:col-span-4 space-y-8 flex flex-col">
+                        <div className="col-span-12 lg:col-span-4 space-y-8 flex flex-col overflow-y-auto min-h-0">
                             <div className="space-y-4 text-center md:text-left">
                                 <h2 className="text-3xl font-bold tracking-tight">Management</h2>
                                 <p className="text-muted-foreground text-sm leading-relaxed">
@@ -130,12 +130,12 @@ function HomePage() {
                         </div>
 
                         {/* Main: Table */}
-                        <div className="col-span-12 lg:col-span-8 flex flex-col">
+                        <div className="col-span-12 lg:col-span-8 flex flex-col min-h-0 overflow-hidden">
                             <div id="history" className="space-y-4 mb-4 text-center md:text-left">
                                 <h2 className="text-3xl font-bold tracking-tight">Transactions</h2>
                                 <p className="text-muted-foreground text-sm">Review and manage your spending history.</p>
                             </div>
-                            <div className="flex-1">
+                            <div className="flex-1 min-h-0">
                                 <ExpenseTable
                                     expenses={expenses}
                                     onDeleteExpense={handleDeleteExpense}
