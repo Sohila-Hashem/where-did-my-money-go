@@ -108,7 +108,7 @@ function HomePage() {
 
                 {/* Management & History Section */}
                 <section id="manage-expenses" className="container mx-auto px-4 max-w-7xl scroll-mt-24">
-                    <div className="grid grid-cols-12 gap-8 items-stretch max-h-[800px] overflow-hidden">
+                    <div className="grid grid-cols-12 gap-8 items-stretch lg:max-h-[800px] lg:overflow-hidden">
                         {/* Sidebar: Form & Categories */}
                         <div className="col-span-12 lg:col-span-4 space-y-8 flex flex-col overflow-y-auto min-h-0">
                             <div className="space-y-4 text-center md:text-left">
