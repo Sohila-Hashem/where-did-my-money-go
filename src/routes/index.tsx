@@ -16,6 +16,7 @@ import { useCustomCategories } from '@/hooks/use-custom-categories';
 import { useCurrency } from '@/hooks/use-currency';
 import { Footer } from '@/components/shared/footer';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { ExpenseDataActions } from '@/components/expense-data-actions';
 
 export const Route = createFileRoute('/')({
     component: HomePage,
@@ -46,7 +47,7 @@ function HomePage() {
     }, [expenses, isInitialized]);
 
 
-    const { update: hookUpdateCustomCategory, customCategories } = useCustomCategories();
+    const { update: hookUpdateCustomCategory, customCategories, refresh: refreshCustomCategories } = useCustomCategories();
 
     const handleUpdateCustomCategory = (oldName: string, newName: string) => {
         hookUpdateCustomCategory(oldName, newName);
@@ -84,6 +85,11 @@ function HomePage() {
         const element = document.getElementById("manage-expenses");
         element?.scrollIntoView({ behavior: "smooth" });
     };
+
+    const handleOnImportSuccess = () => {
+        setExpenses(loadExpenses());
+        refreshCustomCategories();
+    }
 
     return (
         <div className="min-h-screen bg-background relative overflow-x-hidden scroll-smooth">
@@ -138,10 +144,13 @@ function HomePage() {
 
                         {/* Main: Table Area (5 rows) */}
                         <div className="col-span-12 lg:col-span-8 lg:row-span-5 lg:col-start-5 lg:row-start-1 flex flex-col min-h-0 space-y-4 max-h-[800px] lg:max-h-none">
-                            <div id="history" className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 shrink-0">
-                                <div className="space-y-4 text-center md:text-left">
+                            <div id="history" className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shrink-0">
+                                <div className="space-y-2 text-center md:text-left">
                                     <h2 className="text-3xl font-bold tracking-tight">Transactions</h2>
                                     <p className="text-muted-foreground text-sm">Review your spending history.</p>
+                                </div>
+                                <div className="flex justify-center sm:justify-end">
+                                    <ExpenseDataActions onImportSuccess={handleOnImportSuccess} />
                                 </div>
                             </div>
                             <div className="flex-1 min-h-0">

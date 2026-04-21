@@ -12,6 +12,16 @@ export const saveExpenses = (expenses: Expense[]) => {
     localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(expenses));
 }
 
+export const overwriteExpenses = (expenses: Expense[]) => {
+    saveExpenses(expenses);
+}
+
+export const appendExpenses = (newExpenses: Expense[]) => {
+    const current = loadExpenses();
+    const merged = [...current, ...newExpenses];
+    saveExpenses(merged);
+}
+
 export const loadExpenses = (): Expense[] => {
     const data = localStorage.getItem(STORAGE_KEYS.EXPENSES);
     return data ? JSON.parse(data) : [];
