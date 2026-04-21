@@ -1,4 +1,4 @@
-import { loadExpenses, overwriteExpenses, appendExpenses, loadCustomCategories } from "@/lib/storage";
+import { loadExpenses, overwriteExpenses, loadCustomCategories } from "@/lib/storage";
 import { validateImportedExpenses, mergeExpenses } from "@/domain/expense-csv";
 import { addCustomCategory } from "@/api/custom-categories";
 import { CATEGORIES } from "@/domain/expense";
