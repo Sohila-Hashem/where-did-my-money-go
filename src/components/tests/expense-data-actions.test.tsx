@@ -92,4 +92,83 @@ describe('ExpenseDataActions', () => {
             expect(toast.error).toHaveBeenCalledWith('Bad file', expect.any(Object));
         });
     });
+
+    it('shows skipped rows message in success toast', async () => {
+        vi.mocked(api.importExpenses).mockResolvedValue({ success: true, count: 5, skippedCount: 2, errors: [] });
+
+        const { container } = render(<ExpenseDataActions />);
+        const input = container.querySelector('input[type="file"]') as HTMLInputElement;
+        const file = new File(['csv'], 'test.csv');
+        fireEvent.change(input, { target: { files: [file] } });
+
+        fireEvent.click(screen.getByText('Start Import'));
+
+        await waitFor(() => {
+            expect(toast.success).toHaveBeenCalledWith(
+                'Import complete!',
+                expect.objectContaining({
+                    description: expect.stringContaining('Skipped 2 invalid rows')
+                })
+            );
+        });
+    });
+
+    it('throws error in success callback if data has error (export)', async () => {
+        vi.mocked(api.exportExpenses).mockResolvedValue({ error: 'Export failed' });
+        render(<ExpenseDataActions />);
+
+        fireEvent.click(screen.getByText('Export CSV'));
+
+        // toast.promise handles the success/error callbacks
+        const promiseCall = vi.mocked(toast.promise).mock.calls[0];
+        const successCallback = (promiseCall[1] as any).success;
+
+        expect(() => successCallback({ error: 'Export failed' })).toThrow('Export failed');
+        expect(successCallback({ success: true })).toBe('Expenses exported successfully!');
+    });
+
+    it('handles unexpected errors during import', async () => {
+        vi.mocked(api.importExpenses).mockRejectedValue(new Error('Unexpected Crash'));
+
+        const { container } = render(<ExpenseDataActions />);
+        const input = container.querySelector('input[type="file"]') as HTMLInputElement;
+        const file = new File(['csv content'], 'test.csv', { type: 'text/csv' });
+        fireEvent.change(input, { target: { files: [file] } });
+
+        fireEvent.click(screen.getByText('Start Import'));
+
+        await waitFor(() => {
+            expect(toast.error).toHaveBeenCalledWith('An unexpected error occurred during import.', expect.any(Object));
+        });
+    });
+
+    it('shows default error message if result.error is missing', async () => {
+        vi.mocked(api.importExpenses).mockResolvedValue({ error: '' });
+
+        const { container } = render(<ExpenseDataActions />);
+        const input = container.querySelector('input[type="file"]') as HTMLInputElement;
+        const file = new File(['csv'], 'test.csv');
+        fireEvent.change(input, { target: { files: [file] } });
+
+        fireEvent.click(screen.getByText('Start Import'));
+
+        await waitFor(() => {
+            expect(toast.error).toHaveBeenCalledWith('Import failed', expect.any(Object));
+        });
+    });
+
+    it('works without onImportSuccess callback', async () => {
+        vi.mocked(api.importExpenses).mockResolvedValue({ success: true, count: 1, skippedCount: 0, errors: [] });
+
+        const { container } = render(<ExpenseDataActions />);
+        const input = container.querySelector('input[type="file"]') as HTMLInputElement;
+        const file = new File(['csv'], 'test.csv');
+        fireEvent.change(input, { target: { files: [file] } });
+
+        fireEvent.click(screen.getByText('Start Import'));
+
+        await waitFor(() => {
+            expect(toast.success).toHaveBeenCalled();
+        });
+    });
 });

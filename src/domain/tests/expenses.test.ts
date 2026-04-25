@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
+import * as dateFns from "date-fns";
 import {
     getTotalAmount,
     filterExpensesByMonth,
@@ -11,6 +12,15 @@ import {
     isPresetExpenseCategory
 } from "@/domain/expense";
 import type { Expense } from "@/domain/expense";
+
+vi.mock('date-fns', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('date-fns')>();
+    return {
+        ...actual,
+        parseISO: vi.fn(actual.parseISO),
+        format: vi.fn(actual.format)
+    };
+});
 
 const mockExpenses: Expense[] = [
     {
@@ -174,6 +184,38 @@ describe("Expense Domain Logic", () => {
                 expect(errors).toHaveLength(1);
                 expect(errors[0]).toContain('Unexpected error');
             });
+
+            it('should handle dates that are already Date objects', () => {
+                const now = new Date();
+                const data = [{ amount: 10, date: now, category: 'Food', description: 'Date Obj' }];
+                const { valid } = validateImportedExpenses(data);
+                expect(valid).toHaveLength(1);
+                expect(valid[0].date).toBe(now.toISOString());
+            });
+
+            it('should handle parseISO failures gracefully', () => {
+                const data = [{ amount: 10, date: 'totally-invalid-date-string', category: 'Food', description: 'Fail' }];
+                const { valid, errors } = validateImportedExpenses(data);
+                expect(valid).toHaveLength(0);
+                expect(errors).toHaveLength(1);
+            });
+
+            it('should handle parseISO throwing an error', () => {
+                const mockedParseISO = vi.mocked(dateFns.parseISO);
+                mockedParseISO.mockImplementationOnce(() => {
+                    throw new Error('Parse error');
+                });
+                const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+                
+                const data = [{ amount: 10, date: 'trigger-throw', category: 'Food', description: 'Fail' }];
+                const { valid, errors } = validateImportedExpenses(data);
+                
+                expect(valid).toHaveLength(0);
+                expect(errors).toHaveLength(1);
+                expect(consoleSpy).toHaveBeenCalled();
+                
+                consoleSpy.mockRestore();
+            });
         });
 
         describe('mergeExpenses', () => {
@@ -227,7 +269,31 @@ describe("Expense Domain Logic", () => {
                 expect(mockClick).toHaveBeenCalled();
                 expect(mockAppendChild).toHaveBeenCalled();
                 expect(mockRemoveChild).toHaveBeenCalled();
+                expect(mockRevokeObjectURL).toHaveBeenCalled();
 
+                vi.restoreAllMocks();
+            });
+
+            it('should use fallback file name if none provided', () => {
+                const mockFormat = vi.mocked(dateFns.format);
+                mockFormat.mockReturnValue('2023-01-01');
+
+                const mockSetAttribute = vi.fn();
+                vi.spyOn(document, 'createElement').mockImplementation((tagName) => {
+                    if (tagName === 'a') {
+                        return {
+                            setAttribute: mockSetAttribute,
+                            click: vi.fn(),
+                        } as any;
+                    }
+                    return {} as any;
+                });
+                vi.spyOn(document.body, 'appendChild').mockImplementation(() => ({} as any));
+                vi.spyOn(document.body, 'removeChild').mockImplementation(() => ({} as any));
+
+                downloadExpensesExportFile('csv,content');
+
+                expect(mockSetAttribute).toHaveBeenCalledWith('download', 'expenses-2023-01-01.csv');
                 vi.restoreAllMocks();
             });
         });

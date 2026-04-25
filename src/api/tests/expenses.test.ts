@@ -65,7 +65,7 @@ describe('Expenses API', () => {
         it('should handle worker errors', async () => {
             vi.mocked(storage.loadExpenses).mockReturnValue([{ id: '1' } as any]);
 
-            // Mock Worker for this specific test to throw error
+            // Mock Worker for this specific test to return error response
             const originalWorker = globalThis.Worker;
             globalThis.Worker = class extends MockWorker {
                 postMessage = vi.fn((_data: any) => {
@@ -80,6 +80,27 @@ describe('Expenses API', () => {
             const result = await exportExpenses();
 
             expect(result.error).toBe('Worker Failed');
+
+            globalThis.Worker = originalWorker;
+        });
+
+        it('should handle worker fatal errors via onerror', async () => {
+            vi.mocked(storage.loadExpenses).mockReturnValue([{ id: '1' } as any]);
+
+            const originalWorker = globalThis.Worker;
+            globalThis.Worker = class extends MockWorker {
+                postMessage = vi.fn((_data: any) => {
+                    setTimeout(() => {
+                        if (this.onerror) {
+                            this.onerror(new Error('Fatal Worker Error'));
+                        }
+                    }, 0);
+                });
+            } as any;
+
+            const result = await exportExpenses();
+
+            expect(result.error).toBe('Fatal Worker Error');
 
             globalThis.Worker = originalWorker;
         });

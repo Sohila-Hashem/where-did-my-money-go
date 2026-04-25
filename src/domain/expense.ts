@@ -98,7 +98,7 @@ export const validateImportedExpenses = (data: any[]): { valid: Expense[], error
             const mapped = mapToExpense(item);
 
             // Transform date string to Date object for Zod validation
-            const rawDate = (item as any).date;
+            const rawDate = (item).date;
             let dateForValidation: Date | undefined;
             if (rawDate) {
                 if (typeof rawDate === 'string') {
@@ -159,17 +159,19 @@ export const mergeExpenses = (current: Expense[], imported: Expense[]): Expense[
  * @param fileName - The name of the file to download. Defaults to 'expenses-{today}.csv'.
  */
 export const downloadExpensesExportFile = (csvContent: string, fileName?: string) => {
-    const fName = fileName || `${EXPENSE_EXPORT_FILE_PREFIX}-${format(new Date(),
-        EXPENSE_EXPORT_DATE_FORMAT)}.csv`;
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
+
+    const fallbackFileName = `${EXPENSE_EXPORT_FILE_PREFIX}-${format(new Date(), EXPENSE_EXPORT_DATE_FORMAT)}.csv`;
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", fName);
-    link.style.visibility = 'hidden';
+    link.setAttribute("download", fileName || fallbackFileName);
+
     document.body.appendChild(link);
     link.click();
-    link.remove()
+    document.body.removeChild(link);
+
+    URL.revokeObjectURL(url);
 }
 
 

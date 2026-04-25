@@ -49,12 +49,12 @@ export function ExpenseDataActions({ onImportSuccess }: ExpenseDataActionsProps)
             const result = await importExpenses(pendingFile, options);
 
             if (result.success) {
-                const successMessageDescription = `Added ${result.count} expenses. ${result.skippedCount > 0 ? `Skipped ${result.skippedCount} invalid rows.` : ''}`
+                const skippedRowsMsg = result.skippedCount > 0 ? `Skipped ${result.skippedCount} invalid rows.` : '';
+                const successMessageDescription = `Added ${result.count} expenses. ${skippedRowsMsg}`;
                 toast.success(`Import complete!`, {
                     id: loadingToast,
                     description: successMessageDescription,
                 });
-                // Trigger callback to update state
                 onImportSuccess?.();
             } else {
                 toast.error(result.error || 'Import failed', { id: loadingToast });
