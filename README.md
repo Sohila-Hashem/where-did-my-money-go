@@ -13,11 +13,6 @@
 
 A minimalistic expense tracker and analyzer that turns your spending into clear monthly and month-to-month insights, so you can finally answer: "Where does it all go?" PandaCoins helps you track your coins!
 
-## Demo
-
-**Live website:** https://pandacoins.vercel.app/
-
-
 ## Problem
 
 I have always struggled by the end of every month because I don’t know _where my money went_. PandaCoins was born to solve this. Existing expense-tracking apps and platforms are either too complex or not free.
