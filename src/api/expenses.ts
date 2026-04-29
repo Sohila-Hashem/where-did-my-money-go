@@ -1,22 +1,68 @@
-import { loadExpenses, mergeExpensesWithExisting, saveExpenses, mergeCustomCategoriesWithExisting } from "@/lib/storage";
-import { validateImportedExpenses, downloadExpensesExportFile, type Expense, isPresetExpenseCategory } from "@/domain/expense";
+import { loadExpenses, insertExpense, deleteExpense, updateExpense, loadRawExpenses, saveRawExpenses, mergeCustomCategoriesWithExisting, type PaginationResult, EXPENSES_PAGE_SIZE } from "@/lib/storage";
+import { downloadExpensesExportFile, type Expense } from "@/domain/expense";
+import { ExpensesWorkerType, ImportMode } from '../workers/expenses-csv.worker';
 
-export enum ImportMode {
-    MERGE = 'merge',
-    OVERWRITE = 'overwrite',
-}
-
-export enum ExpensesWorkerType {
-    GENERATE_CSV = 'GENERATE_CSV',
-    PARSE_CSV = 'PARSE_CSV',
-}
+export { ExpensesWorkerType, ImportMode };
 
 export interface ImportOptions {
     mode: ImportMode;
     addMissingCategories: boolean;
 }
 
-import CsvWorker from '../workers/csv.worker.ts?worker';
+export interface ExpensesFilters {
+    month?: string;
+    category?: string;
+}
+
+/**
+ * Loads all expenses from storage (no filters, no pagination).
+ * Used for the initial page load.
+ */
+export function getAllExpenses(): Expense[] {
+    return loadExpenses();
+}
+
+/**
+ * Adds a new expense, persists the updated list, and returns it.
+ */
+export function addExpense(expense: Expense): Expense[] {
+    return insertExpense(expense);
+}
+
+/**
+ * Updates an existing expense, persists the updated list, and returns it.
+ */
+export function editExpense(expense: Expense): Expense[] {
+    return updateExpense(expense);
+}
+
+/**
+ * Deletes an expense by ID, persists the updated list, and returns it.
+ */
+export function removeExpense(id: string): Expense[] {
+    return deleteExpense(id);
+}
+
+/**
+ * Returns all expenses matching the given filters (no pagination).
+ */
+export function getExpenses(filters?: ExpensesFilters): Expense[] {
+    return loadExpenses({ month: filters?.month, category: filters?.category });
+}
+
+/**
+ * Returns one page of expenses matching the given filters.
+ * Uses cursor-based pagination.
+ */
+export function getExpensesPage(
+    filters: ExpensesFilters,
+    cursorId: string | null,
+    limit: number = EXPENSES_PAGE_SIZE,
+): PaginationResult {
+    return loadExpenses({ month: filters.month, category: filters.category, cursorId, limit });
+}
+
+import CsvWorker from '../workers/expenses-csv.worker.ts?worker';
 
 /**
  * Communicates with the CSV Web Worker.
@@ -45,16 +91,16 @@ async function runWorker(type: ExpensesWorkerType, payload: any): Promise<any> {
     });
 }
 
-export async function exportExpenses(expensesToExport?: Expense[], fileName?: string) {
+/**
+ * Exports filtered expenses to a CSV file.
+ * The main thread only reads the raw JSON string from localStorage;
+ * all parsing, filtering, and CSV generation happen inside the worker.
+ */
+export async function exportExpenses(filters?: ExpensesFilters, fileName?: string) {
     try {
-        const expenses = expensesToExport || loadExpenses();
-        if (expenses.length === 0) {
-            return { error: "No expenses to export." };
-        }
-
-        const csvContent = await runWorker(ExpensesWorkerType.GENERATE_CSV, expenses);
+        const rawJson = loadRawExpenses();
+        const csvContent = await runWorker(ExpensesWorkerType.EXPORT_EXPENSES, { rawJson, filters });
         downloadExpensesExportFile(csvContent, fileName);
-
         return { success: true };
     } catch (error) {
         console.error("Export error:", error);
@@ -62,37 +108,35 @@ export async function exportExpenses(expensesToExport?: Expense[], fileName?: st
     }
 }
 
+/**
+ * Imports expenses from a CSV file.
+ * The main thread reads the raw JSON string from localStorage and the file text,
+ * then passes both to the worker for parsing, validation, and merging.
+ * The main thread only writes the resulting raw JSON string back to localStorage.
+ */
 export async function importExpenses(file: File, options: ImportOptions) {
     try {
-        const text = await file.text();
-        const rawData = await runWorker(ExpensesWorkerType.PARSE_CSV, text);
+        const csvText = await file.text();
+        const existingRawJson = loadRawExpenses();
 
-        const { valid, errors } = validateImportedExpenses(rawData);
+        const result = await runWorker(ExpensesWorkerType.IMPORT_EXPENSES, {
+            csvText,
+            existingRawJson,
+            mode: options.mode,
+            addMissingCategories: options.addMissingCategories,
+        });
 
-        if (valid.length === 0 && errors.length > 0) {
-            return { error: `No valid expenses found. Errors: ${errors.slice(0, 3).join('; ')}` };
-        }
+        saveRawExpenses(result.mergedRawJson);
 
-        // Handle custom categories
-        if (options.addMissingCategories) {
-            const newCustomCategories = valid.filter((expense: Expense) => !isPresetExpenseCategory(expense.category)).map((expense: Expense) => expense.category);
-            mergeCustomCategoriesWithExisting(newCustomCategories);
-        }
-
-        switch (options.mode) {
-            case ImportMode.OVERWRITE:
-                saveExpenses(valid);
-                break;
-            case ImportMode.MERGE:
-                mergeExpensesWithExisting(valid);
-                break;
+        if (result.newCustomCategories.length > 0) {
+            mergeCustomCategoriesWithExisting(result.newCustomCategories);
         }
 
         return {
             success: true,
-            count: valid.length,
-            skippedCount: errors.length,
-            errors: errors.length > 5 ? [...errors.slice(0, 5), `...and ${errors.length - 5} more`] : errors
+            count: result.count,
+            skippedCount: result.skippedCount,
+            errors: result.errors,
         };
     } catch (error) {
         console.error("Import error:", error);

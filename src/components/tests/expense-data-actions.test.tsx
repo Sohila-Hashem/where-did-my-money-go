@@ -8,6 +8,7 @@ import type { Expense } from '@/domain/expense';
 vi.mock('@/api/expenses', () => ({
     exportExpenses: vi.fn(),
     importExpenses: vi.fn(),
+    getExpenses: vi.fn(),
     ImportMode: {
         MERGE: 'merge',
         OVERWRITE: 'overwrite'
@@ -80,7 +81,8 @@ describe('ExpenseDataActions', () => {
 
     it('calls exportExpenses when Export CSV is clicked', async () => {
         vi.mocked(api.exportExpenses).mockResolvedValue({ success: true });
-        render(<ExpenseDataActions expensesToExport={mockedExpenses} />);
+        vi.mocked(api.getExpenses).mockReturnValue(mockedExpenses);
+        render(<ExpenseDataActions filters={{}} />);
 
         fireEvent.click(screen.getByText('Export CSV'));
 
@@ -93,7 +95,8 @@ describe('ExpenseDataActions', () => {
     });
 
     it('shows error if trying to export zero expenses', async () => {
-        render(<ExpenseDataActions expensesToExport={[]} />);
+        vi.mocked(api.getExpenses).mockReturnValue([]);
+        render(<ExpenseDataActions filters={{}} />);
 
         fireEvent.click(screen.getByText('Export CSV'));
 
@@ -173,7 +176,8 @@ describe('ExpenseDataActions', () => {
 
     it('throws error in success callback if data has error (export)', async () => {
         vi.mocked(api.exportExpenses).mockResolvedValue({ error: 'Export failed' });
-        render(<ExpenseDataActions expensesToExport={mockedExpenses} />);
+        vi.mocked(api.getExpenses).mockReturnValue(mockedExpenses);
+        render(<ExpenseDataActions filters={{}} />);
 
         fireEvent.click(screen.getByText('Export CSV'));
         fireEvent.click(screen.getByText('Export Now'));
@@ -241,8 +245,9 @@ describe('ExpenseDataActions', () => {
         let resolveExport: (value: any) => void = () => {};
         const exportPromise = new Promise((resolve) => { resolveExport = resolve; });
         vi.mocked(api.exportExpenses).mockReturnValue(exportPromise as any);
+        vi.mocked(api.getExpenses).mockReturnValue(mockedExpenses);
 
-        render(<ExpenseDataActions expensesToExport={mockedExpenses} />);
+        render(<ExpenseDataActions filters={{}} />);
 
         fireEvent.click(screen.getByText('Export CSV'));
         fireEvent.click(screen.getByText('Export Now'));
@@ -282,7 +287,8 @@ describe('ExpenseDataActions', () => {
     });
 
     it('handles export promise error callback', async () => {
-        render(<ExpenseDataActions expensesToExport={mockedExpenses} />);
+        vi.mocked(api.getExpenses).mockReturnValue(mockedExpenses);
+        render(<ExpenseDataActions filters={{}} />);
 
         fireEvent.click(screen.getByText('Export CSV'));
         fireEvent.click(screen.getByText('Export Now'));
@@ -311,7 +317,7 @@ describe('ExpenseDataActions', () => {
     });
 
     it('closes export confirmation when Cancel is clicked', async () => {
-        render(<ExpenseDataActions expensesToExport={mockedExpenses} />);
+        render(<ExpenseDataActions filters={{}} />);
 
         fireEvent.click(screen.getByText('Export CSV'));
         expect(screen.getByText('Confirm Export')).toBeInTheDocument();

@@ -2,14 +2,12 @@ import { describe, it, expect, vi } from "vitest";
 import * as dateFns from "date-fns";
 import {
     getTotalAmount,
-    filterExpensesByMonth,
-    filterExpensesByCategory,
     getAvailableMonths,
     validateImportedExpenses,
     mapToExpense,
     mergeExpenses,
     downloadExpensesExportFile,
-    isPresetExpenseCategory
+    isPresetExpenseCategory,
 } from "@/domain/expense";
 import type { Expense } from "@/domain/expense";
 
@@ -67,20 +65,6 @@ describe("Expense Domain Logic", () => {
             });
         });
 
-        describe("filterExpensesByMonth", () => {
-            it("returns expenses for the specified month", () => {
-                const result = filterExpensesByMonth(mockExpenses, "2026-10");
-                expect(result).toHaveLength(3);
-                expect(result.map(e => e.id)).toEqual(expect.arrayContaining(["1", "2", "4"]));
-                expect(result.find(e => e.id === "3")).toBeUndefined();
-            });
-
-            it("returns empty array when no expenses match the month", () => {
-                const result = filterExpensesByMonth(mockExpenses, "2026-11");
-                expect(result).toHaveLength(0);
-            });
-        });
-
         describe("getAvailableMonths", () => {
             it("returns unique months in descending order", () => {
                 const months = getAvailableMonths(mockExpenses);
@@ -92,32 +76,6 @@ describe("Expense Domain Logic", () => {
             });
         });
 
-        describe("filterExpensesByCategory", () => {
-            it("returns only expenses matching the given preset category", () => {
-                const result = filterExpensesByCategory(mockExpenses, "Food");
-                expect(result).toHaveLength(2);
-                expect(result.map((e) => e.id)).toEqual(expect.arrayContaining(["1", "3"]));
-            });
-
-            it("returns empty array when no expense matches the category", () => {
-                const result = filterExpensesByCategory(mockExpenses, "Entertainment");
-                expect(result).toHaveLength(0);
-            });
-
-            it("matches a custom category string correctly", () => {
-                const expensesWithCustom: Expense[] = [
-                    ...mockExpenses,
-                    { id: "5", date: "2026-10-01T10:00:00.000Z", amount: 30, category: "My Custom" as any, description: "Custom thing" },
-                ];
-                const result = filterExpensesByCategory(expensesWithCustom, "My Custom");
-                expect(result).toHaveLength(1);
-                expect(result[0].id).toBe("5");
-            });
-
-            it("returns empty array for empty expenses list", () => {
-                expect(filterExpensesByCategory([], "Food")).toHaveLength(0);
-            });
-        });
     });
 
     describe('CSV and Import/Export Logic', () => {

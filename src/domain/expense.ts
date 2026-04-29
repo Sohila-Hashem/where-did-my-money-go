@@ -52,15 +52,6 @@ export const getTotalAmount = (expenses: Expense[]) => {
     return expenses.reduce((sum, expense) => sum + expense.amount, 0);
 }
 
-export const filterExpensesByMonth = (expenses: Expense[], month: string) => {
-    const monthKey = format(new Date(month), 'yyyy-MM');
-    return expenses.filter((expense) => format(new Date(expense.date), 'yyyy-MM') === monthKey);
-}
-
-export const filterExpensesByCategory = (expenses: Expense[], category: string) => {
-    return expenses.filter((expense) => expense.category === category);
-}
-
 export const getAvailableMonths = (expenses: Expense[]) => {
     const months = new Set<string>();
     expenses.forEach((expense) => {

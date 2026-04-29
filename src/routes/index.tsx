@@ -9,9 +9,9 @@ import { MonthComparison } from "@/components/month-comparison";
 import { Confetti } from "@/components/shared/confetti";
 import { CustomCategoriesManager } from "@/components/custom-categories-manager";
 import { FeaturesHighlight } from "@/components/features-highlight";
-import { filterExpensesByMonth, filterExpensesByCategory, type Expense, EXPENSE_EXPORT_DATE_FORMAT } from "@/domain/expense";
+import { type Expense, EXPENSE_EXPORT_DATE_FORMAT } from "@/domain/expense";
 import { format } from 'date-fns';
-import { deleteExpense, loadExpenses, saveExpenses, updateExpense } from '@/lib/storage';
+import { getAllExpenses, addExpense, editExpense, removeExpense, getExpensesPage, type ExpensesFilters } from '@/api/expenses';
 import { v7 as uuid7 } from 'uuid';
 import { useCustomCategories } from '@/hooks/use-custom-categories';
 import { useCurrency } from '@/hooks/use-currency';
@@ -28,41 +28,54 @@ function HomePage() {
     const [expenses, setExpenses] = useState<Expense[]>([]);
     const [editingExpense, setEditingExpense] = useState<Expense | undefined>();
     const [showConfetti, setShowConfetti] = useState(false);
-    const [isInitialized, setIsInitialized] = useState(false);
 
     const [selectedMonth, setSelectedMonth] = useState<string>("all");
     const [selectedCategory, setSelectedCategory] = useState<string>("all");
+    const [cursors, setCursors] = useState<(string | null)[]>([null]);
 
     // Load from localStorage on mount
     useEffect(() => {
-        const storedExpenses = loadExpenses();
-
-        if (storedExpenses) {
-            setExpenses(storedExpenses);
-        }
-
-        setIsInitialized(true);
+        setExpenses(getAllExpenses());
     }, []);
-
-    // Save to localStorage when expenses change
-    useEffect(() => {
-        if (!isInitialized) return;
-        saveExpenses(expenses);
-    }, [expenses, isInitialized]);
 
 
     const { update: hookUpdateCustomCategory, customCategories, refresh: refreshCustomCategories } = useCustomCategories();
 
-    const filteredExpenses = useMemo(() => {
-        let result = expenses;
-        if (selectedMonth !== "all") {
-            result = filterExpensesByMonth(result, selectedMonth);
+    const filters: ExpensesFilters = {
+        month: selectedMonth !== 'all' ? selectedMonth : undefined,
+        category: selectedCategory !== 'all' ? selectedCategory : undefined,
+    };
+
+    const currentCursor = cursors[cursors.length - 1];
+
+    const paginationResult = useMemo(
+        () => getExpensesPage(filters, currentCursor),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [expenses, selectedMonth, selectedCategory, currentCursor]
+    );
+
+    const isFirstPage = cursors.length === 1;
+    const isLastPage = !paginationResult.hasNextPage;
+
+    const handleMonthChange = (month: string) => {
+        setSelectedMonth(month);
+        setCursors([null]);
+    };
+
+    const handleCategoryChange = (category: string) => {
+        setSelectedCategory(category);
+        setCursors([null]);
+    };
+
+    const handleNextPage = () => {
+        if (paginationResult.nextCursor !== null) {
+            setCursors(prev => [...prev, paginationResult.nextCursor]);
         }
-        if (selectedCategory !== "all") {
-            result = filterExpensesByCategory(result, selectedCategory);
-        }
-        return result;
-    }, [expenses, selectedMonth, selectedCategory]);
+    };
+
+    const handlePreviousPage = () => {
+        setCursors(prev => prev.length > 1 ? prev.slice(0, -1) : prev);
+    };
 
     const exportFileName = useMemo(() => {
         const dateSegment = selectedMonth !== "all" ? selectedMonth : format(new Date(), EXPENSE_EXPORT_DATE_FORMAT);
@@ -81,24 +94,21 @@ function HomePage() {
     };
 
     const handleAddExpense = (expense: Omit<Expense, "id">) => {
-        const newExpense: Expense = {
-            ...expense,
-            id: uuid7(),
-        };
-        setExpenses([...expenses, newExpense]);
+        const newExpense: Expense = { ...expense, id: uuid7() };
+        setExpenses(addExpense(newExpense));
         setShowConfetti(true);
         setTimeout(() => setShowConfetti(false), 3000);
         toast.success("Expense added successfully!");
     };
 
     const handleUpdateExpense = (expense: Expense) => {
-        setExpenses(updateExpense(expense, expenses));
+        setExpenses(editExpense(expense));
         setEditingExpense(undefined);
         toast.success("Expense updated successfully!");
     };
 
     const handleDeleteExpense = (id: string) => {
-        setExpenses(deleteExpense(id, expenses));
+        setExpenses(removeExpense(id));
         toast.success("Expense deleted successfully!");
     };
 
@@ -109,7 +119,7 @@ function HomePage() {
     };
 
     const handleOnImportSuccess = () => {
-        setExpenses(loadExpenses());
+        setExpenses(getAllExpenses());
         refreshCustomCategories();
     }
 
@@ -174,7 +184,8 @@ function HomePage() {
                                 <div className="flex justify-center sm:justify-end">
                                     <ExpenseDataActions
                                         onImportSuccess={handleOnImportSuccess}
-                                        expensesToExport={filteredExpenses}
+                                        totalExpensesCount={paginationResult.totalCount}
+                                        filters={filters}
                                         fileName={exportFileName}
                                     />
                                 </div>
@@ -182,15 +193,21 @@ function HomePage() {
                             <div className="flex-1 min-h-0">
                                 <ExpenseTable
                                     expenses={expenses}
-                                    filteredExpenses={filteredExpenses}
+                                    totalAmount={paginationResult.totalAmount}
+                                    totalCount={paginationResult.totalCount}
+                                    pagedExpenses={paginationResult.data}
                                     selectedMonth={selectedMonth}
                                     selectedCategory={selectedCategory}
-                                    onMonthChange={setSelectedMonth}
-                                    onCategoryChange={setSelectedCategory}
+                                    onMonthChange={handleMonthChange}
+                                    onCategoryChange={handleCategoryChange}
                                     onDeleteExpense={handleDeleteExpense}
                                     onEditExpense={handleEditExpense}
                                     currency={currency}
                                     customCategories={customCategories}
+                                    onNextPage={handleNextPage}
+                                    onPreviousPage={handlePreviousPage}
+                                    isFirstPage={isFirstPage}
+                                    isLastPage={isLastPage}
                                 />
                             </div>
                         </div>

@@ -2,7 +2,7 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Download, Upload, Loader2 } from "lucide-react";
-import { exportExpenses, importExpenses, type ImportOptions } from "@/api/expenses";
+import { exportExpenses, importExpenses, type ImportOptions, type ExpensesFilters } from "@/api/expenses";
 import { ImportOptionsDialog } from "./import-options-dialog";
 import {
     Tooltip,
@@ -23,13 +23,15 @@ import {
 
 interface ExpenseDataActionsProps {
     readonly onImportSuccess?: () => void;
-    readonly expensesToExport?: import("@/domain/expense").Expense[];
+    readonly totalExpensesCount: number;
+    readonly filters?: ExpensesFilters;
     readonly fileName?: string;
 }
 
 export function ExpenseDataActions({
     onImportSuccess,
-    expensesToExport = [],
+    totalExpensesCount,
+    filters,
     fileName
 }: ExpenseDataActionsProps) {
     const [isExporting, setIsExporting] = React.useState(false);
@@ -43,7 +45,7 @@ export function ExpenseDataActions({
         setShowExportConfirm(false);
         setIsExporting(true);
 
-        toast.promise(exportExpenses(expensesToExport, fileName), {
+        toast.promise(exportExpenses(filters, fileName), {
             loading: 'Preparing your export...',
             success: (data) => {
                 if (data.error) throw new Error(data.error);
@@ -56,7 +58,7 @@ export function ExpenseDataActions({
 
     const handleExportClick = (e: React.MouseEvent) => {
         e.preventDefault();
-        if (expensesToExport.length === 0) {
+        if (totalExpensesCount === 0) {
             toast.error("No expenses found to export.");
             return;
         }
@@ -178,7 +180,7 @@ export function ExpenseDataActions({
                             <AlertDialogTitle>Confirm Export</AlertDialogTitle>
                             <AlertDialogDescription asChild>
                                 <div className="space-y-3">
-                                    <p>You are about to export <strong>{expensesToExport.length}</strong> transactions to a CSV file.</p>
+                                    <p>You are about to export <strong>{totalExpensesCount}</strong> transactions to a CSV file.</p>
                                 </div>
                             </AlertDialogDescription>
                         </AlertDialogHeader>

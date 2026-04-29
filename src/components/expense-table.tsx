@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { format } from "date-fns";
-import { BanknoteArrowDown, Pencil, Trash2, Inbox } from "lucide-react";
+import { BanknoteArrowDown, Pencil, Trash2, Inbox, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion } from "motion/react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,13 +31,15 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { type Currency } from "@/lib/constants";
-import { getAvailableMonths, getTotalAmount, type Expense } from "@/domain/expense";
+import { getAvailableMonths, type Expense } from "@/domain/expense";
 import { formatCurrency } from "@/lib/utils";
 import { CategorySelect } from "@/components/category-select";
 
 interface ExpenseTableProps {
     expenses: Expense[];
-    filteredExpenses: Expense[];
+    totalAmount: number;
+    totalCount: number;
+    pagedExpenses: Expense[];
     selectedMonth: string;
     selectedCategory: string;
     onMonthChange: (month: string) => void;
@@ -46,11 +48,17 @@ interface ExpenseTableProps {
     onEditExpense: (expense: Expense) => void;
     currency: Currency;
     customCategories?: string[];
+    onNextPage: () => void;
+    onPreviousPage: () => void;
+    isFirstPage: boolean;
+    isLastPage: boolean;
 }
 
 export function ExpenseTable({
     expenses,
-    filteredExpenses,
+    totalAmount,
+    totalCount,
+    pagedExpenses,
     selectedMonth,
     selectedCategory,
     onMonthChange,
@@ -59,22 +67,16 @@ export function ExpenseTable({
     onEditExpense,
     currency,
     customCategories = [],
+    onNextPage,
+    onPreviousPage,
+    isFirstPage,
+    isLastPage,
 }: ExpenseTableProps) {
     const [deleteId, setDeleteId] = useState<string | null>(null);
 
     const availableMonths = useMemo(() => {
         return getAvailableMonths(expenses);
     }, [expenses]);
-
-    const sortedExpenses = useMemo(() => {
-        return [...filteredExpenses].sort((a, b) => {
-            return new Date(b.date).getTime() - new Date(a.date).getTime();
-        });
-    }, [filteredExpenses]);
-
-    const totalAmount = useMemo(() => {
-        return getTotalAmount(filteredExpenses);
-    }, [filteredExpenses]);
 
     return (
         <motion.div
@@ -104,7 +106,7 @@ export function ExpenseTable({
                                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
                                     <span className="text-sm text-muted-foreground whitespace-nowrap">Month:</span>
                                     <Select value={selectedMonth} onValueChange={onMonthChange}>
-                                        <SelectTrigger className="w-full sm:w-[140px]">
+                                        <SelectTrigger className="w-full sm:w-35">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -130,7 +132,7 @@ export function ExpenseTable({
                             </div>
                         </div>
 
-                        {sortedExpenses.length === 0 ? (
+                        {totalCount === 0 ? (
                             <motion.div
                                 className="flex-1 flex flex-col items-center justify-center text-muted-foreground py-12"
                                 initial={{ opacity: 0, scale: 0.9 }}
@@ -141,7 +143,7 @@ export function ExpenseTable({
                                     <Inbox className="size-10 text-muted-foreground/40" />
                                 </div>
                                 <p className="text-center font-medium">No expenses found</p>
-                                <p className="text-center text-sm max-w-[200px] mt-1">Start by adding your first expense to see it here!</p>
+                                <p className="text-center text-sm max-w-50 mt-1">Start by adding your first expense to see it here!</p>
                             </motion.div>
                         ) : (
                             <div className="flex-1 flex flex-col min-h-0">
@@ -159,12 +161,12 @@ export function ExpenseTable({
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
-                                                {sortedExpenses.map((expense, _index) => (
+                                                {pagedExpenses.map((expense, _index) => (
                                                     <TableRow key={expense.id} className="hover:bg-accent/5 transition-colors">
                                                         <TableCell className="whitespace-nowrap">
                                                             {format(new Date(expense.date), "MMM dd, yyyy")}
                                                         </TableCell>
-                                                        <TableCell className="max-w-[200px] truncate">{expense.description}</TableCell>
+                                                        <TableCell className="max-w-50 truncate">{expense.description}</TableCell>
                                                         <TableCell>
                                                             <span className="inline-flex items-center rounded-full bg-primary/10 text-primary px-2.5 py-0.5 text-xs font-medium">
                                                                 {expense.category}
@@ -201,19 +203,43 @@ export function ExpenseTable({
                                 </div>
 
                                 <motion.div
-                                    className="flex justify-between items-center pt-4 mt-2 border-t"
+                                    className="flex flex-col gap-2 pt-4 mt-2 border-t"
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     transition={{ delay: 0.3 }}
                                 >
-                                    <span className="text-sm text-muted-foreground font-medium">
-                                        {filteredExpenses.length} transaction{filteredExpenses.length === 1 ? "" : "s"}
-                                    </span>
-                                    <div className="text-xl">
-                                        <span className="text-muted-foreground mr-2 text-sm">Total:</span>
-                                        <span className="font-bold text-primary">
-                                            {formatCurrency(totalAmount, currency.code)}
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-sm text-muted-foreground font-medium">
+                                            {totalCount} transaction{totalCount === 1 ? "" : "s"}
                                         </span>
+                                        <div className="text-xl">
+                                            <span className="text-muted-foreground mr-2 text-sm">Total:</span>
+                                            <span className="font-bold text-primary">
+                                                {formatCurrency(totalAmount, currency.code)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-center items-center gap-4">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={onPreviousPage}
+                                            disabled={isFirstPage}
+                                            aria-label="Previous page"
+                                        >
+                                            <ChevronLeft className="h-4 w-4 mr-1" />
+                                            Previous
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={onNextPage}
+                                            disabled={isLastPage}
+                                            aria-label="Next page"
+                                        >
+                                            Next
+                                            <ChevronRight className="h-4 w-4 ml-1" />
+                                        </Button>
                                     </div>
                                 </motion.div>
                             </div>
